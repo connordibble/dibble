@@ -20,6 +20,12 @@
       "source": "./no-slop",
       "description": "Technical writing without the machine-prose tells: an evidence-over-adjectives craft skill, a deterministic sloplint checker, and a voice extractor that builds a personal voice skill from your real writing.",
       "keywords": ["writing", "technical-writing", "documentation", "voice", "deslop"]
+    },
+    {
+      "name": "tailwind-v4-tokens",
+      "source": "./tailwind-v4-tokens",
+      "description": "Tailwind v4 theming knowledge: @theme vs :root, token-first dark mode, the spacing-scale shadowing trap, @apply in scoped styles, and v3 migration review.",
+      "keywords": ["tailwind", "design-tokens", "theming", "dark-mode", "migration"]
     }
   ]
 }
