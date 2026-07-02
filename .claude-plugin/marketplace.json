@@ -44,6 +44,12 @@
       "source": "./receipts",
       "description": "Evidence-linked summaries where every claim traces to a verbatim quote, plus a checker that verifies quotes against their sources and catches the subtle case where a quote was reworded (ALTERED).",
       "keywords": ["evidence", "summarization", "citations", "fact-check", "synthesis"]
+    },
+    {
+      "name": "zod-first-tools",
+      "source": "./zod-first-tools",
+      "description": "Build LLM tool definitions and MCP servers from one Zod schema instead of two: provider-specific derivation patterns plus a linter that flags a hand-written JSON Schema sitting next to a Zod schema.",
+      "keywords": ["zod", "mcp", "tool-use", "structured-output", "typescript"]
     }
   ]
 }
