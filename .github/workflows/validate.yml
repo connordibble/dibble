@@ -15,6 +15,8 @@ jobs:
           node-version: 24
       - name: Validate marketplace and plugin structure
         run: node scripts/validate.mjs
+      - name: Lint our own prose with sloplint (strict)
+        run: node plugins/no-slop/skills/writing/scripts/sloplint.mjs --strict README.md plugins/*/README.md plugins/*/skills/*/SKILL.md
       - name: Run plugin test suites
         run: |
           shopt -s nullglob

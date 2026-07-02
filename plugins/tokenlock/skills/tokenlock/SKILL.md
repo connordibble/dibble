@@ -15,7 +15,7 @@ and how to resolve them correctly when they do.
 A design token is a contract: `--color-surface` means "the surface color,
 wherever the design team takes it next." A hardcoded `#18181b` means "whatever
 this happened to be the day it was written." The two look identical in a diff
-and render identically today — the difference only shows up months later, when
+and render identically today; the difference only shows up months later, when
 the palette changes and 40 hardcoded copies don't. Agents make this worse at
 scale: training data is full of `bg-zinc-900`, so drift is the default output
 unless something pushes back. tokenlock is that push-back.
@@ -29,7 +29,7 @@ with its definition site. Resolve in this order:
    matches by value; you can match by meaning. If the report suggests
    `--color-surface` but the element is a border, check the token file for a
    border token first. A value-matched but semantically wrong token is drift
-   with extra steps — it breaks the first time the two tokens diverge.
+   with extra steps: it breaks the first time the two tokens diverge.
 2. **If no token fits, add one — in the token file, not inline.** Define it
    alongside its siblings with a semantic name (`--color-warning-border`, not
    `--color-yellow-2`), then reference it. Never scatter the raw value and
@@ -43,7 +43,7 @@ with its definition site. Resolve in this order:
    reader will "fix" it back.
 
 Do not work around the scanner by moving a hardcoded value into a variable
-with a local name — the value still bypasses the token contract.
+with a local name; the value still bypasses the token contract.
 
 ## Auditing a whole codebase
 
@@ -57,7 +57,7 @@ node <this-skill-directory>/scripts/scan.mjs --json src/   # machine-readable
 
 Exit code 1 means violations were found, so the same command works as a CI
 gate. When asked to "clean up token drift," run the audit first, group the
-results by token (not by file), and fix one token's occurrences at a time —
+results by token (not by file), and fix one token's occurrences at a time;
 that keeps each change reviewable and reveals which missing tokens to add.
 
 ## Configuration
@@ -73,5 +73,5 @@ that keeps each change reviewable and reveals which missing tokens to add.
 | `ignore`      | node_modules, dist, build, …             | Directories skipped (additive)                     |
 
 When setting tokenlock up in a new project, point `tokenFiles` at the real
-token source explicitly rather than relying on auto-discovery — it makes the
+token source explicitly rather than relying on auto-discovery: it makes the
 suggestion engine exact and the configuration reviewable.

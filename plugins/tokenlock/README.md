@@ -4,8 +4,8 @@
 
 tokenlock is a design-token guardrail for coding agents. Every time the agent
 writes or edits a file, a hook scans it for hardcoded colors and raw Tailwind
-palette utilities. Violations go straight back to the agent — with the *right*
-token suggested by value, straight from your own token files — and it corrects
+palette utilities. Violations go straight back to the agent with the *right*
+token suggested by value, straight from your own token files, and it corrects
 its own drift before you ever see it.
 
 ```
@@ -34,8 +34,8 @@ checked on every write."
 
 Zero config to start: tokenlock finds your token files automatically
 (`globals.css`, `tokens.css`, `theme.css`, `*.tokens.css`) and runs in
-`correct` mode. Add `.tokenlock.json` at the project root to tune it —
-see [the skill reference](skills/tokenlock/SKILL.md#configuration).
+`correct` mode. Add `.tokenlock.json` at the project root to tune it; see
+[the skill reference](skills/tokenlock/SKILL.md#configuration).
 
 ## What it catches
 
@@ -47,7 +47,7 @@ see [the skill reference](skills/tokenlock/SKILL.md#configuration).
 | Color function literals    | `rgb(250, 250, 250)`, `oklch(…)` | Normalized value matching (comma/space-insensitive) |
 
 Token definition files themselves are exempt, and so are Next.js metadata
-images (`opengraph-image.tsx`, `apple-icon.tsx`, …) — they render through
+images (`opengraph-image.tsx`, `apple-icon.tsx`, …): they render through
 Satori where CSS custom properties can't resolve, so hardcoded values there
 are correct, not drift. `#fff`, `#000`, `transparent`, and friends are allowed
 by default (strict shops: override `allowValues`). Escape hatch:
@@ -57,12 +57,17 @@ by default (strict shops: override `allowValues`). Escape hatch:
 
 The same `scan.mjs` runs as:
 
-1. **Agent hook** — PostToolUse on every Write/Edit, self-correcting loop
-2. **Repo audit** — `node skills/tokenlock/scripts/scan.mjs src/` for existing drift
-3. **CI gate** — exits 1 on violations; `--json` for tooling
+1. **Agent hook**: PostToolUse on every Write/Edit, a self-correcting loop
+2. **Repo audit**: `node skills/tokenlock/scripts/scan.mjs src/` for existing drift
+3. **CI gate**: exits 1 on violations; `--json` for tooling
 
-So the rule that governs your agent is the same rule that governs your CI —
-one definition of "clean," no divergence between what the agent is told and
+```yaml
+# .github/workflows/tokens.yml
+- run: node .claude/skills/tokenlock/scripts/scan.mjs src/
+```
+
+So the rule that governs your agent is the same rule that governs your CI.
+One definition of "clean," no divergence between what the agent is told and
 what the pipeline enforces.
 
 ## Other agents (Codex, Cursor, Gemini CLI)
@@ -76,10 +81,10 @@ as-is. The automatic per-edit hook is Claude Code-specific.
 
 - Line-based scanning: a hex value split across lines or built by string
   concatenation won't be caught. This catches drift, not adversaries.
-- `.ts`/`.js` files aren't scanned by default (too many non-color hex strings —
+- `.ts`/`.js` files aren't scanned by default (too many non-color hex strings:
   hashes, IDs). Opt in via `extensions` if your styles live there.
 - Suggestions are exact-value matches. `#18181c` won't suggest the token for
-  `#18181b` — nearest-color matching guesses at design intent, and a wrong
-  confident suggestion is worse than none.
+  `#18181b`, because nearest-color matching guesses at design intent, and a
+  wrong confident suggestion is worse than none.
 
 Part of the [dibble](../../README.md) catalog. MIT.
