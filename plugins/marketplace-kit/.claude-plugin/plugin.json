@@ -1,0 +1,14 @@
+{
+  "name": "marketplace-kit",
+  "description": "Build, validate, and maintain a Claude Code plugin marketplace. A skill covering the repo layout and versioning rules, plus a validator that checks marketplace.json, plugin manifests, version consistency, skill frontmatter, and hook references — the same invariants the community-marketplace review enforces.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Connor Dibble",
+    "email": "cdibb44@gmail.com",
+    "url": "https://connordibble.dev"
+  },
+  "homepage": "https://github.com/connordibble/dibble/tree/main/plugins/marketplace-kit",
+  "repository": "https://github.com/connordibble/dibble",
+  "license": "MIT",
+  "keywords": ["marketplace", "plugins", "claude-code", "validation", "ci", "publishing", "meta"]
+}

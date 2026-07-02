@@ -62,6 +62,12 @@
       "source": "./design-verify",
       "description": "Verify UI changes by rendering and looking: a static responsive-smell linter for mobile-overflow bugs plus a screenshot-loop workflow that critiques at 375px and 1280px against explicit design heuristics.",
       "keywords": ["design", "qa", "responsive", "mobile-first", "frontend"]
+    },
+    {
+      "name": "marketplace-kit",
+      "source": "./marketplace-kit",
+      "description": "Build, validate, and maintain a Claude Code plugin marketplace: a skill on layout and versioning plus a validator that checks the same invariants the community-marketplace review enforces. Dogfooded on this catalog.",
+      "keywords": ["marketplace", "plugins", "claude-code", "validation", "publishing"]
     }
   ]
 }
