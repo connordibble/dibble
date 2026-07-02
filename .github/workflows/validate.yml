@@ -17,6 +17,14 @@ jobs:
         run: node plugins/marketplace-kit/skills/marketplace-kit/scripts/validate-marketplace.mjs .
       - name: Lint our own prose with sloplint (strict)
         run: node plugins/no-slop/skills/writing/scripts/sloplint.mjs --strict README.md plugins/*/README.md plugins/*/skills/*/SKILL.md
+      - name: Audit every README with readme-that-sells
+        run: |
+          shopt -s nullglob
+          fail=0
+          for f in README.md plugins/*/README.md; do
+            node plugins/readme-that-sells/skills/readme/scripts/audit-readme.mjs "$f" >/dev/null || { echo "readme audit failed: $f"; fail=1; }
+          done
+          exit $fail
       - name: Run plugin test suites
         run: |
           shopt -s nullglob
