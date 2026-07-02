@@ -1,0 +1,19 @@
+{
+  "description": "Scans files the agent writes or edits for design-token violations and feeds the corrections back so it fixes its own drift.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/skills/tokenlock/scripts/scan.mjs", "--hook"],
+            "timeout": 15,
+            "statusMessage": "tokenlock: checking design tokens"
+          }
+        ]
+      }
+    ]
+  }
+}

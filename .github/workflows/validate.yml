@@ -18,7 +18,7 @@ jobs:
       - name: Run plugin test suites
         run: |
           shopt -s nullglob
-          suites=(plugins/*/tests)
+          suites=(plugins/*/tests/*.test.mjs)
           if [ ${#suites[@]} -gt 0 ]; then
             node --test "${suites[@]}"
           else

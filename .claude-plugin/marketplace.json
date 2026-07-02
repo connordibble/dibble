@@ -8,5 +8,12 @@
     "description": "Guardrails and craft for coding agents. Deterministic hooks where judgment isn't needed, sharp skills where it is.",
     "pluginRoot": "./plugins"
   },
-  "plugins": []
+  "plugins": [
+    {
+      "name": "tokenlock",
+      "source": "./tokenlock",
+      "description": "Design-token enforcement hooks: catches hardcoded colors and raw Tailwind palette utilities on every write, and suggests the matching token from your own token files.",
+      "keywords": ["design-tokens", "design-system", "tailwind", "hooks", "guardrails"]
+    }
+  ]
 }
