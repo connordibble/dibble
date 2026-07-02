@@ -50,6 +50,12 @@
       "source": "./zod-first-tools",
       "description": "Build LLM tool definitions and MCP servers from one Zod schema instead of two: provider-specific derivation patterns plus a linter that flags a hand-written JSON Schema sitting next to a Zod schema.",
       "keywords": ["zod", "mcp", "tool-use", "structured-output", "typescript"]
+    },
+    {
+      "name": "readme-that-sells",
+      "source": "./readme-that-sells",
+      "description": "Write and audit developer-tool READMEs and launch copy that convert: the what-is-it / does-it-work / can-I-try-it funnel, plus a structural auditor that measures time-to-install and time-to-first-example.",
+      "keywords": ["readme", "documentation", "developer-tools", "launch", "open-source"]
     }
   ]
 }

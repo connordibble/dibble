@@ -20,6 +20,16 @@ $ node skills/receipts/scripts/check.mjs postmortem.md --base logs/
   ALTERED means the quote was reworded from the source. Restore the exact words.
 ```
 
+## Install
+
+```
+/plugin marketplace add connordibble/dibble
+/plugin install receipts@dibble
+```
+
+Exit 1 on any unresolved citation, so it runs in CI on a reports or docs
+directory. `--json` for tooling.
+
 ## The idea
 
 Plain Markdown footnotes, nothing to learn:
@@ -42,16 +52,6 @@ the quote that got *reworded*: close enough to look right, different enough to
 mean something else. receipts does a windowed similarity pass: if the exact
 quote isn't found but a very similar span is, it reports **ALTERED** and shows
 you the real text. That is the summary-drift failure made visible.
-
-## Install
-
-```
-/plugin marketplace add connordibble/dibble
-/plugin install receipts@dibble
-```
-
-Exit 1 on any unresolved citation, so it runs in CI on a reports or docs
-directory. `--json` for tooling.
 
 ## Where it earns its place
 
