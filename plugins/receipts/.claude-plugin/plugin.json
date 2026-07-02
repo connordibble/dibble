@@ -1,0 +1,14 @@
+{
+  "name": "receipts",
+  "description": "Evidence-linked summaries where every claim traces to a verbatim quote. A skill for trustworthy synthesis (postmortems, PR descriptions, research and feedback digests) plus a checker that verifies each quote appears in its source and catches the subtle case where a quote was reworded.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Connor Dibble",
+    "email": "cdibb44@gmail.com",
+    "url": "https://connordibble.dev"
+  },
+  "homepage": "https://github.com/connordibble/dibble/tree/main/plugins/receipts",
+  "repository": "https://github.com/connordibble/dibble",
+  "license": "MIT",
+  "keywords": ["evidence", "summarization", "citations", "fact-check", "postmortem", "synthesis", "trust"]
+}

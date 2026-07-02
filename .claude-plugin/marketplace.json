@@ -38,6 +38,12 @@
       "source": "./install-gate",
       "description": "PreToolUse gate on package installs: blocks typosquats and install-time code execution, flags hallucinated package names for verification. npm/pnpm/yarn/bun, pip, cargo. Offline heuristics.",
       "keywords": ["security", "supply-chain", "typosquat", "slopsquat", "hooks"]
+    },
+    {
+      "name": "receipts",
+      "source": "./receipts",
+      "description": "Evidence-linked summaries where every claim traces to a verbatim quote, plus a checker that verifies quotes against their sources and catches the subtle case where a quote was reworded (ALTERED).",
+      "keywords": ["evidence", "summarization", "citations", "fact-check", "synthesis"]
     }
   ]
 }
