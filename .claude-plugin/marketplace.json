@@ -1,0 +1,12 @@
+{
+  "name": "dibble",
+  "owner": {
+    "name": "Connor Dibble",
+    "email": "cdibb44@gmail.com"
+  },
+  "metadata": {
+    "description": "Guardrails and craft for coding agents. Deterministic hooks where judgment isn't needed, sharp skills where it is.",
+    "pluginRoot": "./plugins"
+  },
+  "plugins": []
+}

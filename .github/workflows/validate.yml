@@ -1,0 +1,26 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Validate marketplace and plugin structure
+        run: node scripts/validate.mjs
+      - name: Run plugin test suites
+        run: |
+          shopt -s nullglob
+          suites=(plugins/*/tests)
+          if [ ${#suites[@]} -gt 0 ]; then
+            node --test "${suites[@]}"
+          else
+            echo "no test suites yet"
+          fi
