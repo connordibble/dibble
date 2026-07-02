@@ -1,0 +1,19 @@
+{
+  "description": "Inspects package-install commands before they run and blocks typosquats, slopsquats, and install-time code execution.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/skills/install-gate/scripts/gate.mjs", "--hook"],
+            "timeout": 10,
+            "statusMessage": "install-gate: checking packages"
+          }
+        ]
+      }
+    ]
+  }
+}

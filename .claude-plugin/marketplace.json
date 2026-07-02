@@ -32,6 +32,12 @@
       "source": "./agent-audit",
       "description": "Read-only security audit of your agent config: hijacked-hook patterns, permission creep, plaintext MCP endpoints, inline credentials, world-writable configs. Every check maps to a documented attack.",
       "keywords": ["security", "audit", "supply-chain", "mcp", "hooks"]
+    },
+    {
+      "name": "install-gate",
+      "source": "./install-gate",
+      "description": "PreToolUse gate on package installs: blocks typosquats and install-time code execution, flags hallucinated package names for verification. npm/pnpm/yarn/bun, pip, cargo. Offline heuristics.",
+      "keywords": ["security", "supply-chain", "typosquat", "slopsquat", "hooks"]
     }
   ]
 }
