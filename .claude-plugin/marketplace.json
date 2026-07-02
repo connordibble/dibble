@@ -56,6 +56,12 @@
       "source": "./readme-that-sells",
       "description": "Write and audit developer-tool READMEs and launch copy that convert: the what-is-it / does-it-work / can-I-try-it funnel, plus a structural auditor that measures time-to-install and time-to-first-example.",
       "keywords": ["readme", "documentation", "developer-tools", "launch", "open-source"]
+    },
+    {
+      "name": "design-verify",
+      "source": "./design-verify",
+      "description": "Verify UI changes by rendering and looking: a static responsive-smell linter for mobile-overflow bugs plus a screenshot-loop workflow that critiques at 375px and 1280px against explicit design heuristics.",
+      "keywords": ["design", "qa", "responsive", "mobile-first", "frontend"]
     }
   ]
 }

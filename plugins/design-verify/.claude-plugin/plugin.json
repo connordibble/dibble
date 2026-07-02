@@ -1,0 +1,14 @@
+{
+  "name": "design-verify",
+  "description": "Verify UI changes by rendering and looking, not assuming. A static responsive-smell linter for mobile-overflow bugs plus a screenshot-loop workflow: capture at 375px and 1280px, critique against explicit design heuristics, fix the source, re-check, and show proof.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Connor Dibble",
+    "email": "cdibb44@gmail.com",
+    "url": "https://connordibble.dev"
+  },
+  "homepage": "https://github.com/connordibble/dibble/tree/main/plugins/design-verify",
+  "repository": "https://github.com/connordibble/dibble",
+  "license": "MIT",
+  "keywords": ["design", "qa", "responsive", "mobile-first", "visual-regression", "frontend", "verification"]
+}
