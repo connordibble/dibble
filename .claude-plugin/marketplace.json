@@ -26,6 +26,12 @@
       "source": "./tailwind-v4-tokens",
       "description": "Tailwind v4 theming knowledge: @theme vs :root, token-first dark mode, the spacing-scale shadowing trap, @apply in scoped styles, and v3 migration review.",
       "keywords": ["tailwind", "design-tokens", "theming", "dark-mode", "migration"]
+    },
+    {
+      "name": "agent-audit",
+      "source": "./agent-audit",
+      "description": "Read-only security audit of your agent config: hijacked-hook patterns, permission creep, plaintext MCP endpoints, inline credentials, world-writable configs. Every check maps to a documented attack.",
+      "keywords": ["security", "audit", "supply-chain", "mcp", "hooks"]
     }
   ]
 }
