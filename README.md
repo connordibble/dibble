@@ -10,11 +10,14 @@ small, focused plugins that give an agent your system's constraints, taste, and
 evidence standards, and enforce them at the moment work happens rather than
 hoping the instructions stuck.
 
-Every tool here ships as a portable [Agent Skill](https://agentskills.io), so
-the knowledge works in **Claude Code, Codex, Cursor, and Gemini CLI**. Where
-enforcement needs to be deterministic, a Claude Code plugin wraps the same
-script in a hook. One codebase, two tiers: automatic in Claude Code, runnable
-on demand everywhere else.
+Every plugin's skill and CLI script ship as a portable
+[Agent Skill](https://agentskills.io) — no Claude Code APIs, so the knowledge
+and the checkers both work as-is in **Codex, Cursor, and Gemini CLI**, and in
+CI on any platform. Automatic enforcement (hooks that trigger without being
+asked, namespaced slash commands, one-command marketplace install) is Claude
+Code plugin packaging on top of that, and is Claude-Code-specific. See
+[docs/compatibility.md](docs/compatibility.md) for exactly which layer each
+plugin has.
 
 ## Install
 
@@ -31,18 +34,23 @@ Then install any plugin from the catalog:
 Add the marketplace once; every plugin below (and every one added later) shows
 up in your `/plugin` browser.
 
-Every checker also ships on npm as an `npx` CLI, so CI can run the same rules
-without installing a plugin:
+Every checker also ships on npm, so CI can run the same rules without
+installing a plugin:
 
 ```bash
-npx -p dibble dibble-sloplint --strict docs/*.md
-npx -p dibble dibble-tokenlock src/
-npx -p dibble dibble-validate-marketplace .
+npx dibble sloplint --strict docs/*.md
+npx dibble tokenlock src/
+npx dibble validate-marketplace .
 ```
 
-(`dibble-agent-audit`, `dibble-install-gate`, `dibble-receipts`,
-`dibble-zod-lint`, `dibble-readme-audit`, and `dibble-responsive-smells` round
-out the set.)
+`npx dibble --help` lists every tool (also `agent-audit`, `install-gate`,
+`receipts`, `zod-lint`, `readme-audit`, `responsive-smells`). Each tool also
+publishes its own bin (`dibble-tokenlock`, `dibble-sloplint`, ...) for when
+only one is installed as a project dependency rather than run ad hoc.
+
+Don't want to set anything up first: [examples/](examples/) has one runnable
+fixture per plugin, each a real broken file and a copy-paste command that
+finds it.
 
 ## The catalog
 
@@ -50,14 +58,14 @@ out the set.)
 | --- | --- | --- |
 | [tokenlock](plugins/tokenlock) | Catches hardcoded colors and raw Tailwind palette utilities on every edit, and suggests the matching token from your files | PostToolUse hook + audit + CI |
 | [install-gate](plugins/install-gate) | Blocks typosquats and install-time code execution, flags hallucinated package names before install | PreToolUse hook + CLI |
-| [agent-audit](plugins/agent-audit) | Read-only security audit of your agent config: hijacked hooks, permission creep, plaintext MCP, inline secrets | `/agent-audit` command + CLI |
+| [agent-audit](plugins/agent-audit) | Read-only security audit of your agent config: hijacked hooks, permission creep, plaintext MCP, inline secrets | `/agent-audit:audit` command + CLI |
 | [receipts](plugins/receipts) | Evidence-linked summaries where every claim traces to a verbatim quote; catches quotes that were subtly reworded | Skill + checker + CI |
 | [no-slop](plugins/no-slop) | Technical writing without the machine-prose tells, plus a voice extractor that builds a personal voice skill from your writing | Skill + sloplint + CI |
-| [design-verify](plugins/design-verify) | Renders UI changes and critiques them at 375px/1280px; static linter for mobile-overflow bugs | `/design-verify` command + linter |
+| [design-verify](plugins/design-verify) | Renders UI changes and critiques them at 375px/1280px; static linter for mobile-overflow bugs | `/design-verify:verify` command + linter |
 | [tailwind-v4-tokens](plugins/tailwind-v4-tokens) | The Tailwind v4 theming knowledge behind the enforcement: `@theme`, token-first dark mode, the spacing-shadow trap | Skill |
 | [zod-first-tools](plugins/zod-first-tools) | Build LLM tool definitions and MCP servers from one Zod schema; linter flags a hand-written schema beside it | Skill + linter + CI |
 | [readme-that-sells](plugins/readme-that-sells) | README and launch copy built around the conversion funnel; auditor measures time-to-install and time-to-example | Skill + auditor + CI |
-| [marketplace-kit](plugins/marketplace-kit) | Build and validate a plugin marketplace; catches the version and layout bugs that break installs | `/validate-marketplace` + validator |
+| [marketplace-kit](plugins/marketplace-kit) | Build and validate a plugin marketplace; catches the version and layout bugs that break installs | `/marketplace-kit:validate` command + validator |
 
 ## The idea behind the catalog
 

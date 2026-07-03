@@ -1,0 +1,8 @@
+{
+  "name": "broken-example",
+  "owner": { "name": "Example" },
+  "metadata": { "pluginRoot": "./plugins" },
+  "plugins": [
+    { "name": "greeter", "source": "./greeter", "version": "2.0.0" }
+  ]
+}

@@ -1,0 +1,4 @@
+@theme {
+  --color-surface: #18181b;
+  --color-accent: oklch(0.7 0.15 250);
+}

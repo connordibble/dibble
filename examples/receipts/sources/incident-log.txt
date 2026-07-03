@@ -1,0 +1,7 @@
+Postmortem interview notes, 2026-06-14
+
+On-call engineer said the connection pool exhausted after about 4 minutes
+under load, right before the alert fired.
+
+Same engineer, later in the call: we hadn't rotated the read replica in
+over a year, which is honestly on us.
