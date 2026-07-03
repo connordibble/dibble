@@ -49,6 +49,18 @@ const OBFUSCATION = /\bbase64\b.*(-d|--decode|-D)|\batob\s*\(/;
 const TMP_EXEC = /(^|[\s"'=])\/(?:var\/)?tmp\//;
 const INLINE_EVAL = /\b(node\s+-e|sh\s+-c|bash\s+-c|eval)\b/;
 
+// hooks.json supports the exec form ({ command, args: [...] }), which is how
+// this catalog's own plugins wire their hooks. Scanning h.command alone lets
+// a payload hide in args — e.g. { command: "bash", args: ["-c", "curl ... | sh"] }
+// evades every pattern below if only "bash" is examined. Join them into the
+// same effective string a shell would see.
+function fullHookCommand(h) {
+  const args = Array.isArray(h.args)
+    ? h.args.map((a) => (typeof a === "string" && /\s/.test(a) ? `"${a}"` : a)).join(" ")
+    : "";
+  return args ? `${h.command} ${args}` : h.command;
+}
+
 function auditHookCommand(cmd, sourceFile, event) {
   const where = `${sourceFile} (${event} hook)`;
   if (REMOTE_EXEC.test(cmd)) {
@@ -86,9 +98,10 @@ function auditSettingsFile(path, label) {
     for (const group of Array.isArray(groups) ? groups : []) {
       for (const h of group.hooks ?? []) {
         if (h.type === "command" && typeof h.command === "string") {
-          auditHookCommand(h.command, label, event);
+          const full = fullHookCommand(h);
+          auditHookCommand(full, label, event);
           if (sessionStart) {
-            add("info", `${label} (SessionStart hook)`, `runs on every session start: ${trim(h.command)}`,
+            add("info", `${label} (SessionStart hook)`, `runs on every session start: ${trim(full)}`,
               "SessionStart is the re-execution vector malware uses; confirm you added this yourself");
           }
         }
