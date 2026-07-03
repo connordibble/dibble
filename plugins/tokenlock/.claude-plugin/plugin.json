@@ -1,7 +1,7 @@
 {
   "name": "tokenlock",
   "description": "Design-token enforcement for coding agents. A PostToolUse hook catches hardcoded colors and raw Tailwind palette utilities the moment they're written, and tells the agent which of your project's tokens to use instead.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "author": {
     "name": "Connor Dibble",
     "email": "cdibb44@gmail.com",
@@ -10,5 +10,13 @@
   "homepage": "https://github.com/connordibble/dibble/tree/main/plugins/tokenlock",
   "repository": "https://github.com/connordibble/dibble",
   "license": "MIT",
-  "keywords": ["design-tokens", "design-system", "tailwind", "css", "hooks", "guardrails", "frontend"]
+  "keywords": [
+    "design-tokens",
+    "design-system",
+    "tailwind",
+    "css",
+    "hooks",
+    "guardrails",
+    "frontend"
+  ]
 }

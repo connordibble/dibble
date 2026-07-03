@@ -31,6 +31,19 @@ Then install any plugin from the catalog:
 Add the marketplace once; every plugin below (and every one added later) shows
 up in your `/plugin` browser.
 
+Every checker also ships on npm as an `npx` CLI, so CI can run the same rules
+without installing a plugin:
+
+```bash
+npx -p dibble dibble-sloplint --strict docs/*.md
+npx -p dibble dibble-tokenlock src/
+npx -p dibble dibble-validate-marketplace .
+```
+
+(`dibble-agent-audit`, `dibble-install-gate`, `dibble-receipts`,
+`dibble-zod-lint`, `dibble-readme-audit`, and `dibble-responsive-smells` round
+out the set.)
+
 ## The catalog
 
 | Plugin | What it does | Enforcement |

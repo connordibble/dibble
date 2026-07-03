@@ -1,0 +1,67 @@
+{
+  "name": "dibble",
+  "version": "1.0.0",
+  "description": "Guardrails and craft for coding agents: design-token enforcement, supply-chain gates, config auditing, evidence-linked writing. Claude Code plugin marketplace plus the same checkers as npx CLIs.",
+  "license": "MIT",
+  "author": {
+    "name": "Connor Dibble",
+    "email": "cdibb44@gmail.com",
+    "url": "https://connordibble.dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/connordibble/dibble.git"
+  },
+  "homepage": "https://github.com/connordibble/dibble#readme",
+  "bugs": {
+    "url": "https://github.com/connordibble/dibble/issues"
+  },
+  "keywords": [
+    "claude-code",
+    "agent-skills",
+    "plugins",
+    "marketplace",
+    "design-tokens",
+    "supply-chain",
+    "guardrails",
+    "hooks"
+  ],
+  "type": "module",
+  "bin": {
+    "dibble-tokenlock": "plugins/tokenlock/skills/tokenlock/scripts/scan.mjs",
+    "dibble-sloplint": "plugins/no-slop/skills/writing/scripts/sloplint.mjs",
+    "dibble-agent-audit": "plugins/agent-audit/skills/audit/scripts/audit.mjs",
+    "dibble-install-gate": "plugins/install-gate/skills/install-gate/scripts/gate.mjs",
+    "dibble-receipts": "plugins/receipts/skills/receipts/scripts/check.mjs",
+    "dibble-zod-lint": "plugins/zod-first-tools/skills/zod-first-tools/scripts/lint-tools.mjs",
+    "dibble-readme-audit": "plugins/readme-that-sells/skills/readme/scripts/audit-readme.mjs",
+    "dibble-responsive-smells": "plugins/design-verify/skills/design-verify/scripts/responsive-smells.mjs",
+    "dibble-validate-marketplace": "plugins/marketplace-kit/skills/marketplace-kit/scripts/validate-marketplace.mjs"
+  },
+  "files": [
+    "plugins",
+    "!plugins/*/tests",
+    ".claude-plugin"
+  ],
+  "packageManager": "pnpm@10.33.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test plugins/*/tests/*.test.mjs",
+    "validate": "node plugins/marketplace-kit/skills/marketplace-kit/scripts/validate-marketplace.mjs .",
+    "lint:prose": "node plugins/no-slop/skills/writing/scripts/sloplint.mjs --strict README.md plugins/*/README.md plugins/*/skills/*/SKILL.md",
+    "lint:readmes": "node scripts/audit-readmes.mjs",
+    "sync-versions": "node scripts/sync-versions.mjs",
+    "release": "semantic-release"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "semantic-release": "^25.0.5"
+  }
+}

@@ -1,7 +1,7 @@
 {
   "name": "zod-first-tools",
   "description": "Build LLM tool definitions and MCP servers from one Zod schema instead of two. A skill with provider-specific derivation patterns (Anthropic, OpenAI, MCP) plus a linter that flags the drift smell: a hand-written JSON Schema tool definition sitting next to a Zod schema for the same tool.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "author": {
     "name": "Connor Dibble",
     "email": "cdibb44@gmail.com",
@@ -10,5 +10,14 @@
   "homepage": "https://github.com/connordibble/dibble/tree/main/plugins/zod-first-tools",
   "repository": "https://github.com/connordibble/dibble",
   "license": "MIT",
-  "keywords": ["zod", "mcp", "tool-use", "structured-output", "json-schema", "anthropic", "openai", "typescript"]
+  "keywords": [
+    "zod",
+    "mcp",
+    "tool-use",
+    "structured-output",
+    "json-schema",
+    "anthropic",
+    "openai",
+    "typescript"
+  ]
 }

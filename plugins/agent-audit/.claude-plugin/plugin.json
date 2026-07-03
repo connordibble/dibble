@@ -1,7 +1,7 @@
 {
   "name": "agent-audit",
   "description": "Read-only security audit for your agent setup: flags hijacked-hook patterns (curl|bash, base64 payloads, world-writable scripts), permission creep, plaintext MCP endpoints, inline credentials, and unpinned session-start packages. Every check maps to a documented attack pattern.",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "author": {
     "name": "Connor Dibble",
     "email": "cdibb44@gmail.com",
@@ -10,5 +10,13 @@
   "homepage": "https://github.com/connordibble/dibble/tree/main/plugins/agent-audit",
   "repository": "https://github.com/connordibble/dibble",
   "license": "MIT",
-  "keywords": ["security", "audit", "supply-chain", "mcp", "hooks", "hygiene", "claude-code"]
+  "keywords": [
+    "security",
+    "audit",
+    "supply-chain",
+    "mcp",
+    "hooks",
+    "hygiene",
+    "claude-code"
+  ]
 }
