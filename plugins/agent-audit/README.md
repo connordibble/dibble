@@ -9,7 +9,7 @@ permissions on the configs themselves. Every check maps to a documented
 attack pattern, not a vibe.
 
 ```
-$ /agent-audit
+$ /agent-audit:audit
 
   CRIT  ~/.claude.json (mcp server "notes")
         MCP endpoint over plaintext http: http://mcp.example.com/sse
@@ -33,7 +33,9 @@ $ /agent-audit
 /plugin install agent-audit@dibble
 ```
 
-Then run `/agent-audit`, or just ask to "audit my agent setup."
+Then run `/agent-audit:audit`, or just ask to "audit my agent setup." (Plugin
+commands are namespaced as `/plugin-name:command-name`; the command file here
+is `commands/audit.md`.)
 
 ## What it checks
 

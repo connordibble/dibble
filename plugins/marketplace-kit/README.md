@@ -24,7 +24,7 @@ $ node skills/marketplace-kit/scripts/validate-marketplace.mjs .
 /plugin install marketplace-kit@dibble
 ```
 
-Then run `/validate-marketplace`, or ask to "set up a plugin marketplace."
+Then run `/marketplace-kit:validate`, or ask to "set up a plugin marketplace."
 
 ## What the validator checks
 

@@ -24,8 +24,8 @@ $ node skills/design-verify/scripts/responsive-smells.mjs src/components/Card.ts
 /plugin install design-verify@dibble
 ```
 
-Then run `/design-verify` after a UI change, or just ask to "check how this
-looks."
+Then run `/design-verify:verify` after a UI change, or just ask to "check how
+this looks."
 
 ## Two layers
 
