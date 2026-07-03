@@ -28,6 +28,7 @@
   ],
   "type": "module",
   "bin": {
+    "dibble": "bin/dibble.mjs",
     "dibble-tokenlock": "plugins/tokenlock/skills/tokenlock/scripts/scan.mjs",
     "dibble-sloplint": "plugins/no-slop/skills/writing/scripts/sloplint.mjs",
     "dibble-agent-audit": "plugins/agent-audit/skills/audit/scripts/audit.mjs",
@@ -39,6 +40,7 @@
     "dibble-validate-marketplace": "plugins/marketplace-kit/skills/marketplace-kit/scripts/validate-marketplace.mjs"
   },
   "files": [
+    "bin",
     "plugins",
     "!plugins/*/tests",
     ".claude-plugin"
