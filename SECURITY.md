@@ -7,7 +7,7 @@ higher priority than a normal bug.
 
 ## Reporting a vulnerability
 
-Email **cdibb44@gmail.com** with a subject line starting `[dibble security]`.
+Email **dibbleconnor@gmail.com** with a subject line starting `[dibble security]`.
 Please include:
 
 - which plugin and version (or commit SHA)
