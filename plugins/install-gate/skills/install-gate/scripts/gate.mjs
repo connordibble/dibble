@@ -70,45 +70,68 @@ function tokenize(cmd) {
   return out;
 }
 
+// Extracts { verb, flags, specs } from the tokens following the package
+// manager name, shared by the direct-manager and `python -m pip` shapes.
+function parseVerbSpecs(tokens, verbs) {
+  const verb = tokens.find((t) => !t.startsWith("-"));
+  if (!verb || !verbs.includes(verb)) return null;
+  const afterVerb = tokens.slice(tokens.indexOf(verb) + 1);
+  const flags = afterVerb.filter((t) => t.startsWith("-"));
+  const specs = afterVerb.filter((t) => !t.startsWith("-"));
+  return { verb, flags, specs };
+}
+
 function parseInstall(cmd) {
   const tokens = tokenize(cmd);
   let idx = 0;
   let sudo = false;
   if (tokens[idx] === "sudo") { sudo = true; idx++; }
+
+  // `python -m pip install X` / `python3 -m pip install X` — a common
+  // alternative to invoking `pip` directly, especially in venvs and CI.
+  if (tokens[idx] === "python" || tokens[idx] === "python3") {
+    if (tokens[idx + 1] === "-m" && (tokens[idx + 2] === "pip" || tokens[idx + 2] === "pip3")) {
+      const parsed = parseVerbSpecs(tokens.slice(idx + 3), INSTALL_VERBS.pip);
+      if (!parsed) return null;
+      return { manager: "pip", ecosystem: "pip", ...parsed, sudo, raw: cmd };
+    }
+    return null; // `python script.py`, `python -c ...`, etc. — not a package install
+  }
+
   const mgr = tokens[idx];
   if (!mgr || !INSTALL_VERBS[mgr]) return null;
-  idx++;
-  // `python -m pip install` shape
-  if ((mgr === "python" || mgr === "python3")) return null;
-
-  const rest = tokens.slice(idx);
-  const verb = rest.find((t) => !t.startsWith("-"));
-  if (!verb || !INSTALL_VERBS[mgr].includes(verb)) return null;
-
-  const afterVerb = rest.slice(rest.indexOf(verb) + 1);
-  const flags = afterVerb.filter((t) => t.startsWith("-"));
-  const specs = afterVerb.filter((t) => !t.startsWith("-"));
-  return { manager: mgr, ecosystem: ECOSYSTEM[mgr], verb, flags, specs, sudo, raw: cmd };
+  const parsed = parseVerbSpecs(tokens.slice(idx + 1), INSTALL_VERBS[mgr]);
+  if (!parsed) return null;
+  return { manager: mgr, ecosystem: ECOSYSTEM[mgr], ...parsed, sudo, raw: cmd };
 }
 
 // ---------------------------------------------------------------------------
 // Package-name analysis
 // ---------------------------------------------------------------------------
 
+// Optimal string alignment (restricted Damerau-Levenshtein): standard
+// insert/delete/substitute plus adjacent transpositions at cost 1. Plain
+// Levenshtein scores "reqeusts" (swapped u/e) as distance 2 from "requests",
+// which is exactly the class of typo a typosquatter counts on slipping past
+// a naive check — transpositions are the most common real-world typo.
 function levenshtein(a, b) {
   if (a === b) return 0;
   if (Math.abs(a.length - b.length) > 2) return 3; // early out; we only care about <=1
-  const dp = Array.from({ length: b.length + 1 }, (_, i) => i);
-  for (let i = 1; i <= a.length; i++) {
-    let prev = dp[0];
-    dp[0] = i;
-    for (let j = 1; j <= b.length; j++) {
-      const tmp = dp[j];
-      dp[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[j], dp[j - 1]);
-      prev = tmp;
+  const m = a.length;
+  const n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        dp[i][j] = Math.min(dp[i][j], dp[i - 2][j - 2] + 1);
+      }
     }
   }
-  return dp[b.length];
+  return dp[m][n];
 }
 
 // Strip version/range/source off a spec to get the installable name.

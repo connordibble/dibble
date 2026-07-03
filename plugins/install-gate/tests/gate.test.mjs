@@ -16,11 +16,41 @@ function hook(command) {
 }
 
 test("levenshtein distance basics", () => {
-  assert.equal(levenshtein("react", "recat"), 2);
-  assert.equal(levenshtein("react", "reactt"), 1);
-  assert.equal(levenshtein("lodash", "lodahs"), 2);
-  assert.equal(levenshtein("axios", "axois"), 2);
-  assert.equal(levenshtein("chalk", "chalt"), 1);
+  assert.equal(levenshtein("react", "reactt"), 1); // insertion
+  assert.equal(levenshtein("chalk", "chalt"), 1); // substitution
+  // Adjacent transpositions are the most common real typo and must score 1,
+  // not 2 — a plain (non-Damerau) edit distance misses exactly these.
+  assert.equal(levenshtein("react", "recat"), 1); // ac -> ca
+  assert.equal(levenshtein("lodash", "lodahs"), 1); // sh -> hs
+  assert.equal(levenshtein("axios", "axois"), 1); // io -> oi
+});
+
+test("the typosquats named in the README are actually caught", () => {
+  // These exact examples are documented in plugins/install-gate/README.md.
+  // Both are adjacent-transposition typos of a popular package.
+  assert.equal(hook("pip install reqeusts").decision.permissionDecision, "deny");
+  assert.equal(hook("npm install lodahs").decision.permissionDecision, "deny");
+});
+
+test("python -m pip install is recognized as a pip install", () => {
+  const p = parseInstall("python -m pip install requests");
+  assert.equal(p.manager, "pip");
+  assert.equal(p.ecosystem, "pip");
+  assert.deepEqual(p.specs, ["requests"]);
+
+  const p3 = parseInstall("python3 -m pip install --upgrade requests");
+  assert.equal(p3.manager, "pip");
+  assert.deepEqual(p3.flags, ["--upgrade"]);
+
+  // sudo + python -m pip: both the sudo-pip block AND typosquat detection apply
+  const { decision } = hook("sudo python -m pip install reqeusts");
+  assert.equal(decision.permissionDecision, "deny");
+  assert.match(decision.permissionDecisionReason, /virtualenv/);
+
+  // bare `python script.py` / `python -c ...` are not installs
+  assert.equal(parseInstall("python script.py"), null);
+  assert.equal(parseInstall("python -c \"print(1)\""), null);
+  assert.equal(evaluate("python manage.py migrate").length, 0);
 });
 
 test("parses managers, verbs, flags, specs", () => {
