@@ -11,7 +11,7 @@
  * Exit codes: 0 clean · hook mode: 2 violations (stderr fed back to the agent)
  *             audit mode: 1 violations
  *
- * Zero dependencies. Node 18+.
+ * Zero dependencies. Node 20+.
  */
 
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
