@@ -137,6 +137,13 @@ test("audit mode reports across a directory and exits 1", () => {
   assert.match(r.stdout, /Nav\.tsx/);
 });
 
+test("audit mode reports missing paths without a stack trace", () => {
+  const r = runAudit(["missing-src"]);
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /tokenlock: path not found: .*missing-src/);
+  assert.doesNotMatch(r.stderr, /ENOENT|statSync|at collectFiles/);
+});
+
 test("audit --json emits machine-readable results", () => {
   const r = runAudit(["--json", "src"]);
   assert.equal(r.status, 1);

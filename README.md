@@ -50,12 +50,14 @@ namespaced slash commands stay Claude-only.
 ### CI and npm
 
 Every checker also ships on npm, so CI can run the same rules without
-installing a plugin:
+installing a plugin. Run these from the project you want to check, and replace
+the paths with real paths in that project. `npx` still uses your current
+working directory.
 
 ```bash
-npx dibble sloplint --strict docs/*.md
-npx dibble tokenlock src/
-npx dibble token-drift tokens/figma.tokens.json src/app/globals.css
+npx dibble sloplint --strict README.md docs
+npx dibble tokenlock src
+npx dibble token-drift path/to/figma.tokens.json path/to/globals.css
 npx dibble validate-marketplace .
 npx dibble validate-codex .
 ```

@@ -260,7 +260,13 @@ function runHookMode() {
 }
 
 function collectFiles(target, config, acc) {
-  const st = statSync(target);
+  let st;
+  try {
+    st = statSync(target);
+  } catch (error) {
+    if (error?.code === "ENOENT") throw new Error(`path not found: ${target}`);
+    throw error;
+  }
   if (st.isFile()) { acc.push(target); return acc; }
   for (const e of readdirSync(target, { withFileTypes: true })) {
     if (config.ignore.includes(e.name)) continue;
@@ -276,7 +282,13 @@ function runAuditMode(paths, asJson) {
   const config = loadConfig(projectRoot);
   const index = buildTokenIndex(discoverTokenFiles(projectRoot, config, config.ignore), projectRoot);
 
-  const files = paths.flatMap((p) => collectFiles(resolve(p), config, []));
+  let files;
+  try {
+    files = paths.flatMap((p) => collectFiles(resolve(p), config, []));
+  } catch (error) {
+    process.stderr.write(`tokenlock: ${error.message}\n`);
+    process.exit(2);
+  }
   const results = files
     .map((f) => ({ file: relative(projectRoot, f), violations: scanFile(f, config, index) }))
     .filter((r) => r.violations.length);
