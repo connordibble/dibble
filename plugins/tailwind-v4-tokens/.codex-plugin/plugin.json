@@ -1,6 +1,6 @@
 {
   "name": "tailwind-v4-tokens",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Tailwind CSS v4 theming knowledge for token-first themes, dark mode, @theme, and migration reviews.",
   "author": {
     "name": "Connor Dibble",

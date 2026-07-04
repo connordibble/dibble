@@ -1,6 +1,6 @@
 {
   "name": "marketplace-kit",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Build, validate, and maintain a Claude Code plugin marketplace with structural checks for install-breaking metadata.",
   "author": {
     "name": "Connor Dibble",

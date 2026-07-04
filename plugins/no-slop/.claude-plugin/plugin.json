@@ -1,7 +1,7 @@
 {
   "name": "no-slop",
   "description": "Technical writing without the machine-prose tells. A craft skill built on evidence-over-adjectives rules, a deterministic sloplint checker for the phrases readers have learned to distrust, and a voice extractor that turns samples of your real writing into a personal voice skill.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "Connor Dibble",
     "email": "dibbleconnor@gmail.com",

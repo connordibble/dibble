@@ -1,7 +1,7 @@
 {
   "name": "install-gate",
   "description": "Supply-chain gate on agent-driven package installs. A PreToolUse hook parses npm/pnpm/yarn/bun, pip, and cargo commands and blocks typosquats (edit-distance from popular names), flags slopsquat-shaped names models hallucinate, and stops install-time code execution. Offline heuristics: no network call in your install path.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "Connor Dibble",
     "email": "dibbleconnor@gmail.com",

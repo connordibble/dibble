@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/connordibble/dibble/compare/v1.0.0...v1.1.0) (2026-07-04)
+
+
+### Features
+
+* add Codex plugin marketplace support ([770c291](https://github.com/connordibble/dibble/commit/770c29101c0208447497a6f4234701a7aba54aad))
+
 # 1.0.0 (2026-07-04)
 
 

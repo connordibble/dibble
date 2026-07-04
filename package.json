@@ -1,6 +1,6 @@
 {
   "name": "dibble",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Guardrails and craft for coding agents: design-token enforcement, supply-chain gates, config auditing, evidence-linked writing. Claude Code and Codex plugin metadata plus the same checkers as npx CLIs.",
   "license": "MIT",
   "author": {

@@ -1,6 +1,6 @@
 {
   "name": "receipts",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Evidence-linked summaries where every claim traces to a verbatim quote from a source file.",
   "author": {
     "name": "Connor Dibble",

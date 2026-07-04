@@ -1,7 +1,7 @@
 {
   "name": "marketplace-kit",
   "description": "Build, validate, and maintain a Claude Code plugin marketplace. A skill covering the repo layout and versioning rules, plus a validator that checks marketplace.json, plugin manifests, version consistency, skill frontmatter, and hook references — the same invariants the community-marketplace review enforces.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": {
     "name": "Connor Dibble",
     "email": "dibbleconnor@gmail.com",
