@@ -1,12 +1,16 @@
 # Examples
 
-One runnable fixture per plugin. Each command below is copy-paste-able from
-the repo root and takes a few seconds. `tailwind-v4-tokens` has no example
-here — it's a knowledge-only skill with no checker script to run.
+Runnable fixtures for every plugin with a checker. Each command below is
+copy-paste-able from the repo root and takes a few seconds.
+`tailwind-v4-tokens` has no example here — it's a knowledge-only skill with no
+checker script to run.
 
 ```bash
 # tokenlock — hardcoded colors and raw Tailwind palette utilities
 npx dibble tokenlock examples/tokenlock/src
+
+# token-drift — Figma/DTCG tokens and CSS custom properties disagree
+npx dibble token-drift examples/token-drift/figma-export.tokens.json examples/token-drift/globals.css
 
 # no-slop — machine-prose tells in a draft
 npx dibble sloplint --strict examples/no-slop/draft.md

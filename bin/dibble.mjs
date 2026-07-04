@@ -18,6 +18,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const TOOLS = {
   tokenlock: "plugins/tokenlock/skills/tokenlock/scripts/scan.mjs",
+  "token-drift": "plugins/token-drift/skills/token-drift/scripts/diff-tokens.mjs",
   sloplint: "plugins/no-slop/skills/writing/scripts/sloplint.mjs",
   "agent-audit": "plugins/agent-audit/skills/audit/scripts/audit.mjs",
   "install-gate": "plugins/install-gate/skills/install-gate/scripts/gate.mjs",

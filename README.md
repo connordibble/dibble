@@ -40,23 +40,26 @@ installing a plugin:
 ```bash
 npx dibble sloplint --strict docs/*.md
 npx dibble tokenlock src/
+npx dibble token-drift tokens/figma.tokens.json src/app/globals.css
 npx dibble validate-marketplace .
 ```
 
 `npx dibble --help` lists every tool (also `agent-audit`, `install-gate`,
-`receipts`, `zod-lint`, `readme-audit`, `responsive-smells`). Each tool also
-publishes its own bin (`dibble-tokenlock`, `dibble-sloplint`, ...) for when
-only one is installed as a project dependency rather than run ad hoc.
+`token-drift`, `receipts`, `zod-lint`, `readme-audit`, `responsive-smells`).
+Each tool also publishes its own bin (`dibble-tokenlock`,
+`dibble-token-drift`, `dibble-sloplint`, ...) for when only one is installed as
+a project dependency rather than run ad hoc.
 
-Don't want to set anything up first: [examples/](examples/) has one runnable
-fixture per plugin, each a real broken file and a copy-paste command that
-finds it.
+Don't want to set anything up first: [examples/](examples/) has runnable
+fixtures for every plugin with a checker, each with a copy-paste command that
+finds the issue.
 
 ## The catalog
 
 | Plugin | What it does | Enforcement |
 | --- | --- | --- |
 | [tokenlock](plugins/tokenlock) | Catches hardcoded colors and raw Tailwind palette utilities on every edit, and suggests the matching token from your files | PostToolUse hook + audit + CI |
+| [token-drift](plugins/token-drift) | Compares Figma Variables or DTCG exports against CSS custom properties, with alias-aware value checks and presence-gap warnings | Skill + checker + CI |
 | [install-gate](plugins/install-gate) | Blocks typosquats and install-time code execution, flags hallucinated package names before install | PreToolUse hook + CLI |
 | [agent-audit](plugins/agent-audit) | Read-only security audit of your agent config: hijacked hooks, permission creep, plaintext MCP, inline secrets | `/agent-audit:audit` command + CLI |
 | [receipts](plugins/receipts) | Evidence-linked summaries where every claim traces to a verbatim quote; catches quotes that were subtly reworded | Skill + checker + CI |
@@ -93,9 +96,11 @@ This repo holds itself to what it sells. On every push, CI runs:
 
 - **marketplace-kit** validates the whole catalog (structure, versions, hook
   references) — the plugin validating its own marketplace
-- **80+ tests** across every script (`node --test`)
-- **sloplint** (`--strict`) on every README and SKILL.md in the repo
-- every README passes **readme-that-sells**' own auditor
+- **90+ tests** across every script (`node --test`)
+- **sloplint** (`--strict`) on the root README, plugin READMEs, and every
+  catalog SKILL.md
+- the root README and every plugin README pass **readme-that-sells**' own
+  auditor
 
 Each plugin is self-contained (skills, scripts, tests, README) so it can be read
 and trusted on its own.

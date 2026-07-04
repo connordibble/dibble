@@ -73,10 +73,12 @@ function tokenize(cmd) {
 // Extracts { verb, flags, specs } from the tokens following the package
 // manager name, shared by the direct-manager and `python -m pip` shapes.
 function parseVerbSpecs(tokens, verbs) {
-  const verb = tokens.find((t) => !t.startsWith("-"));
-  if (!verb || !verbs.includes(verb)) return null;
-  const afterVerb = tokens.slice(tokens.indexOf(verb) + 1);
-  const flags = afterVerb.filter((t) => t.startsWith("-"));
+  const verbIndex = tokens.findIndex((t) => verbs.includes(t));
+  if (verbIndex < 0) return null;
+  const verb = tokens[verbIndex];
+  const beforeVerb = tokens.slice(0, verbIndex);
+  const afterVerb = tokens.slice(verbIndex + 1);
+  const flags = [...beforeVerb, ...afterVerb].filter((t) => t.startsWith("-"));
   const specs = afterVerb.filter((t) => !t.startsWith("-"));
   return { verb, flags, specs };
 }

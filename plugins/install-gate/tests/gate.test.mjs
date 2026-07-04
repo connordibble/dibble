@@ -59,6 +59,9 @@ test("parses managers, verbs, flags, specs", () => {
   assert.equal(p.ecosystem, "npm");
   assert.deepEqual(p.specs, ["typescript@5.4.0", "zod"]);
   assert.deepEqual(p.flags, ["-D"]);
+  const globalFlag = parseInstall("npm --unsafe-perm install some-lib");
+  assert.deepEqual(globalFlag.flags, ["--unsafe-perm"]);
+  assert.deepEqual(globalFlag.specs, ["some-lib"]);
   assert.equal(parseInstall("ls -la"), null);
   assert.equal(parseInstall("npm run build"), null);
 });
@@ -94,6 +97,12 @@ test("lifecycle-script flags are blocked", () => {
   const { decision } = hook("pnpm add some-lib --allow-scripts");
   assert.equal(decision.permissionDecision, "deny");
   assert.match(decision.permissionDecisionReason, /lifecycle scripts/);
+});
+
+test("lifecycle-script flags are blocked before or after the install verb", () => {
+  assert.equal(hook("npm --unsafe-perm install some-lib").decision.permissionDecision, "deny");
+  assert.equal(hook("pnpm --allow-scripts add some-lib").decision.permissionDecision, "deny");
+  assert.equal(hook("python -m pip --no-input install reqeusts").decision.permissionDecision, "deny");
 });
 
 test("sudo pip install is blocked", () => {

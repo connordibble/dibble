@@ -37,22 +37,22 @@ diff/sources it's based on.
 ## Architecture decision (make this first)
 
 signoff is a local tool, not a SaaS (dibble's ethos: no auth, no dashboards-as-
-product). v1 = a **CLI that manages a proposal queue on disk + a minimal local
-web UI** to review it, exactly like the pattern the conventions reference for
-`design-verify`'s browser use. Concretely:
+product). v1 = a **CLI that manages a proposal queue on disk**. v1.1 adds the
+minimal local web UI once the proposal model and ledger are trusted.
+Concretely:
 
 - Proposals are files in `.signoff/queue/*.json` (a proposal = id, title,
   rationale, riskNotes, affected files, and a unified diff or patch).
-- The CLI (`signoff submit`, `signoff list`, `signoff apply <id>`,
-  `signoff reject <id>`) manages them.
-- `signoff review` starts a tiny local server rendering the queue with
-  approve/reject/edit buttons; decisions write back to the ledger and, on
+- The v1 CLI (`signoff submit`, `signoff list`, `signoff apply <id>`,
+  `signoff reject <id>`, `signoff ledger`) manages them.
+- v1.1 adds `signoff review`, a tiny local server rendering the queue with
+  approve/reject/edit buttons. Decisions write back to the ledger and, on
   approve, apply the patch.
 - Ledger: `.signoff/ledger.jsonl`, append-only, one decision per line.
 
-This keeps v1 shippable and dependency-light. The web UI is the one place a
-small dependency footprint is acceptable (a minimal server); keep it to the
-standard library + a single static HTML/JS file if feasible (follow the
+This keeps v1 shippable and dependency-light. The future web UI is the one
+place a small dependency footprint is acceptable (a minimal server); keep it
+to the standard library + a single static HTML/JS file if feasible (follow the
 skill-creator eval-viewer pattern: a self-contained HTML file, no framework).
 
 ## Repo scaffolding
@@ -68,9 +68,8 @@ signoff/
 │   ├── queue.mjs              # read/write proposals in .signoff/queue
 │   ├── proposal.mjs           # proposal schema + validation
 │   ├── ledger.mjs             # append-only decision log
-│   ├── patch.mjs              # apply/revert a unified diff safely
-│   └── server.mjs             # minimal local review UI (stdlib http + static file)
-├── ui/review.html            # self-contained review page (no framework)
+│   └── patch.mjs              # apply/revert a unified diff safely
+├── ui/review.html            # v1.1 self-contained review page (no framework)
 ├── skills/signoff/SKILL.md   # teaches an agent to SUBMIT proposals instead of applying directly
 ├── test/*.test.mjs
 ├── examples/                 # a sample queue with 2 proposals + README
@@ -94,7 +93,7 @@ marketplace; the app is the repo.
   clobbers a decision it never saw" essay).
 - **ledger.mjs**: append `{ id, decision, reason, editedDiff?, decidedAt }`.
   Never rewrite; the append-only property is the audit guarantee.
-- **server.mjs**: serve `ui/review.html` + a tiny JSON API (`GET /queue`,
+- **server.mjs (v1.1)**: serve `ui/review.html` + a tiny JSON API (`GET /queue`,
   `POST /decision`). Local only, no auth (bind 127.0.0.1). Decisions go through
   ledger + patch.
 
@@ -108,14 +107,17 @@ marketplace; the app is the repo.
 6. Edit flow: an edited diff is applied and recorded as `edited` with the new diff.
 7. Ledger is append-only (a second decision doesn't overwrite the first).
 8. `patch.mjs` round-trip: apply then revert restores the original file bytes.
-9. Server API: `GET /queue` returns the queue JSON; `POST /decision` updates
-   ledger (test via direct function calls / supertest-style over stdlib http).
-10. Ids are unique and stable-sortable.
+9. Ids are unique and stable-sortable.
+10. v1.1 Server API: `GET /queue` returns the queue JSON; `POST /decision`
+    updates ledger (test via direct function calls / supertest-style over
+    stdlib http).
 
 ## README shape
-Hero: the review UI screenshot + the ledger.jsonl it produces. Install:
-`npx signoff review`. Honest limits: v1 is local/single-user, patches must be
-fresh, not a merge-conflict resolver. Cross-link the essay and receipts.
+Hero: a proposal diff, the CLI approve/reject flow, and the `ledger.jsonl` it
+produces. Install: `npx signoff list` and `npx signoff apply <id>`. Honest
+limits: v1 is local/single-user, patches must be fresh, not a merge-conflict
+resolver, and the review UI is on the v1.1 roadmap. Cross-link the essay and
+receipts.
 
 ## Staging (do NOT build it all at once)
 - v1: CLI queue + ledger + apply/reject + the SKILL.md. **No UI.** Ships the

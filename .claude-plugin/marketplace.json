@@ -16,6 +16,12 @@
       "keywords": ["design-tokens", "design-system", "tailwind", "hooks", "guardrails"]
     },
     {
+      "name": "token-drift",
+      "source": "./token-drift",
+      "description": "Design-token drift auditing: compares Figma Variables or DTCG exports against code-side CSS custom properties, with alias-aware value checks and presence-gap warnings.",
+      "keywords": ["design-tokens", "figma", "dtcg", "css", "design-system"]
+    },
+    {
       "name": "no-slop",
       "source": "./no-slop",
       "description": "Technical writing without the machine-prose tells: an evidence-over-adjectives craft skill, a deterministic sloplint checker, and a voice extractor that builds a personal voice skill from your real writing.",

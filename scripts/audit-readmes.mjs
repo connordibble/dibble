@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Run the readme-that-sells structural auditor over every README in the repo.
- * Used by `pnpm lint:readmes` and CI. Exit 1 if any README fails.
+ * Run the readme-that-sells structural auditor over the public landing READMEs:
+ * the root catalog README and every plugin README. Used by `pnpm lint:readmes`
+ * and CI. Exit 1 if any targeted README fails.
  */
 
 import { spawnSync } from "node:child_process";

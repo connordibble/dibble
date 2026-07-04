@@ -39,11 +39,14 @@ jobs:
       - name: Lint prose with sloplint (strict)
         run: pnpm lint:prose
 
-      - name: Audit every README
+      - name: Audit root and plugin READMEs
         run: pnpm lint:readmes
 
       - name: Test
         run: pnpm test
+
+      - name: Pack dry-run
+        run: pnpm pack --dry-run
 
   release:
     name: release

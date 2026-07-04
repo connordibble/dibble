@@ -16,6 +16,7 @@ its CLI, run on demand, not the automatic enforcement layer.
 | Plugin | Skill (portable) | CLI script | Claude hook | Claude command | CI usable |
 | --- | :---: | :---: | :---: | :---: | :---: |
 | [tokenlock](../plugins/tokenlock) | ✅ | ✅ | ✅ PostToolUse | n/a | ✅ |
+| [token-drift](../plugins/token-drift) | ✅ | ✅ | n/a | n/a | ✅ |
 | [install-gate](../plugins/install-gate) | ✅ | ✅ | ✅ PreToolUse | n/a | ✅ |
 | [agent-audit](../plugins/agent-audit) | ✅ | ✅ | n/a | ✅ `/agent-audit:audit` | ✅ |
 | [design-verify](../plugins/design-verify) | ✅ | ✅ (linter half) | n/a | ✅ `/design-verify:verify` | ✅ (linter) |

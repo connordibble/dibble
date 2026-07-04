@@ -76,8 +76,8 @@ failing test or gate.
 - **Zero runtime dependencies.** Scripts are plain Node `.mjs` using only the
   standard library. Hooks and CLIs run on user machines and in CI; a
   dependency is a liability and a supply-chain surface. (TypeScript-build
-  packages — Tier B `contract-snap` — are the documented exception and use
-  `tsup`/`vitest` like `zod-ai-tool`.)
+  packages, including Tier A `contract-snap`, are the documented exception and
+  use `tsup`/`vitest` like `zod-ai-tool`.)
 - **Exit codes are the contract:** `0` clean, `1` findings/violations, `2`
   reserved for "critical" where a tool has severity tiers (see `agent-audit`).
   Hook mode may use exit `2` to feed stderr back to the agent (see
@@ -134,24 +134,25 @@ in a Tier B repo, replicate the equivalent.
 
 ```bash
 pnpm validate        # marketplace-kit validator: structure, versions, hook refs (monorepo)
-pnpm lint:prose      # sloplint --strict on README + all SKILL.md (no machine-prose tells)
-pnpm lint:readmes    # every README passes readme-that-sells' structural auditor
+pnpm lint:prose      # sloplint --strict on root/plugin READMEs and SKILL.md files
+pnpm lint:readmes    # root/plugin READMEs pass readme-that-sells' structural auditor
 pnpm test            # node --test across all plugin test suites
 ```
 
-**Dogfooding is mandatory.** Every plugin's own README and SKILL.md must pass
-`sloplint --strict` and (for READMEs) the readme audit. The catalog holds
-itself to what it sells. Watch specifically for: em-dash density (use commas /
-colons / periods; wrap deliberate quotes of banned words in backticks — code
-spans are exempt), and hype adjectives.
+**Dogfooding is mandatory.** The root README, every plugin README, and every
+SKILL.md must pass `sloplint --strict`; the root README and plugin READMEs
+must pass the readme audit. The catalog holds itself to what it sells. Watch
+specifically for: em-dash density (use commas / colons / periods; wrap
+deliberate quotes of banned words in backticks — code spans are exempt), and
+hype adjectives.
 
 ## 6. Examples fixtures
 
-Each plugin gets `examples/<name>/`: a real broken input file plus a
-`README.md` with the exact `npx dibble <tool> ...` command and the expected
-output (verified, not illustrative). Add the command to `examples/README.md`.
-See existing `examples/` for the pattern. These are launch fuel — a reader
-runs one command and sees the tool work in 15 seconds.
+Each plugin with a checker gets `examples/<name>/`: a real broken input file
+plus a `README.md` with the exact `npx dibble <tool> ...` command and the
+expected output (verified, not illustrative). Add the command to
+`examples/README.md`. See existing `examples/` for the pattern. These are
+launch fuel — a reader runs one command and sees the tool work in 15 seconds.
 
 ## 7. Definition of done (per plugin/repo)
 
@@ -163,7 +164,7 @@ runs one command and sees the tool work in 15 seconds.
       author email `dibbleconnor@gmail.com`
 - [ ] Registered in marketplace.json + root package.json bins + dispatcher
       (Tier A) OR standalone repo release pipeline wired (Tier B)
-- [ ] examples/ fixture added and verified end-to-end
+- [ ] examples/ fixture added and verified end-to-end, if the plugin has a checker
 - [ ] compatibility.md row added (Tier A)
 - [ ] All four gates green
 - [ ] Committed with a Conventional Commit under dibbleconnor@gmail.com, no

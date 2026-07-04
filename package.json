@@ -30,6 +30,7 @@
   "bin": {
     "dibble": "bin/dibble.mjs",
     "dibble-tokenlock": "plugins/tokenlock/skills/tokenlock/scripts/scan.mjs",
+    "dibble-token-drift": "plugins/token-drift/skills/token-drift/scripts/diff-tokens.mjs",
     "dibble-sloplint": "plugins/no-slop/skills/writing/scripts/sloplint.mjs",
     "dibble-agent-audit": "plugins/agent-audit/skills/audit/scripts/audit.mjs",
     "dibble-install-gate": "plugins/install-gate/skills/install-gate/scripts/gate.mjs",
@@ -41,9 +42,13 @@
   },
   "files": [
     "bin",
+    "CHANGELOG.md",
+    "docs/compatibility.md",
+    "examples",
     "plugins",
     "!plugins/*/tests",
-    ".claude-plugin"
+    ".claude-plugin",
+    "SECURITY.md"
   ],
   "packageManager": "pnpm@10.33.0",
   "publishConfig": {

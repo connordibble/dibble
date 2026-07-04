@@ -39,8 +39,8 @@ logic as zero-dependency Node scripts inside the skill directory, tests in
 
 ```bash
 pnpm validate       # marketplace + plugin structure
-pnpm lint:prose     # sloplint --strict on all READMEs and SKILL.md files
-pnpm lint:readmes   # every README passes the readme-that-sells auditor
+pnpm lint:prose     # sloplint --strict on root/plugin READMEs and SKILL.md files
+pnpm lint:readmes   # root/plugin READMEs pass the readme-that-sells auditor
 pnpm test           # all plugin test suites
 ```
 
