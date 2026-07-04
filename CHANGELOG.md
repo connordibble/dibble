@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/connordibble/dibble/compare/v1.1.0...v1.1.1) (2026-07-04)
+
+
+### Bug Fixes
+
+* handle missing tokenlock paths cleanly ([7ca4202](https://github.com/connordibble/dibble/commit/7ca42022441a703a6a611397e94e5e60c27f8200))
+
 # [1.1.0](https://github.com/connordibble/dibble/compare/v1.0.0...v1.1.0) (2026-07-04)
 
 

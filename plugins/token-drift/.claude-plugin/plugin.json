@@ -1,7 +1,7 @@
 {
   "name": "token-drift",
   "description": "Design-token drift auditing between Figma Variables or W3C DTCG exports and code tokens. Compares values, presence gaps, type mismatches, and alias cycles before design and code quietly diverge.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "Connor Dibble",
     "email": "dibbleconnor@gmail.com",

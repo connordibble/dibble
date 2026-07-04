@@ -1,7 +1,7 @@
 {
   "name": "tailwind-v4-tokens",
   "description": "Tailwind CSS v4 theming knowledge for agents: @theme vs :root, token-first dark mode with @theme inline, the spacing-scale shadowing trap, @apply in scoped styles, and v3 migration. Written from production scar tissue, not the docs summary.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "Connor Dibble",
     "email": "dibbleconnor@gmail.com",

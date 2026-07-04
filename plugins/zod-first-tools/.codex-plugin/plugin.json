@@ -1,6 +1,6 @@
 {
   "name": "zod-first-tools",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Build LLM tool definitions and MCP servers from one Zod schema instead of parallel schema definitions.",
   "author": {
     "name": "Connor Dibble",

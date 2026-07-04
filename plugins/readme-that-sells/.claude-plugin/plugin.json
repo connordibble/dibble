@@ -1,7 +1,7 @@
 {
   "name": "readme-that-sells",
   "description": "Write and audit developer-tool READMEs and launch copy that convert a skimmer into a user. A skill for the what-it-is / does-it-work / can-I-try-it funnel, plus a structural auditor that measures time-to-install and time-to-first-example and fails CI when the first screen is missing them.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "Connor Dibble",
     "email": "dibbleconnor@gmail.com",

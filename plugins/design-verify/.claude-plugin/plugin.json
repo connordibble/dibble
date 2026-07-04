@@ -1,7 +1,7 @@
 {
   "name": "design-verify",
   "description": "Verify UI changes by rendering and looking, not assuming. A static responsive-smell linter for mobile-overflow bugs plus a screenshot-loop workflow: capture at 375px and 1280px, critique against explicit design heuristics, fix the source, re-check, and show proof.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "Connor Dibble",
     "email": "dibbleconnor@gmail.com",

@@ -1,7 +1,7 @@
 {
   "name": "receipts",
   "description": "Evidence-linked summaries where every claim traces to a verbatim quote. A skill for trustworthy synthesis (postmortems, PR descriptions, research and feedback digests) plus a checker that verifies each quote appears in its source and catches the subtle case where a quote was reworded.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "Connor Dibble",
     "email": "dibbleconnor@gmail.com",

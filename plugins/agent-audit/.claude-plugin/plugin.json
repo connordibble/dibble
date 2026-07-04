@@ -1,7 +1,7 @@
 {
   "name": "agent-audit",
   "description": "Read-only security audit for your agent setup: flags hijacked-hook patterns (curl|bash, base64 payloads, world-writable scripts), permission creep, plaintext MCP endpoints, inline credentials, and unpinned session-start packages. Every check maps to a documented attack pattern.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "Connor Dibble",
     "email": "dibbleconnor@gmail.com",
