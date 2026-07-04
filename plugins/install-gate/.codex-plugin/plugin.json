@@ -1,0 +1,40 @@
+{
+  "name": "install-gate",
+  "version": "1.0.0",
+  "description": "Supply-chain gate for package install commands, typosquats, slopsquats, and install-time code execution.",
+  "author": {
+    "name": "Connor Dibble",
+    "email": "dibbleconnor@gmail.com",
+    "url": "https://connordibble.dev"
+  },
+  "homepage": "https://github.com/connordibble/dibble/tree/main/plugins/install-gate",
+  "repository": "https://github.com/connordibble/dibble",
+  "license": "MIT",
+  "keywords": [
+    "security",
+    "supply-chain",
+    "typosquat",
+    "slopsquat",
+    "npm",
+    "pip",
+    "cargo",
+    "hooks"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Install Gate",
+    "shortDescription": "Review install commands before dependencies land.",
+    "longDescription": "Supply-chain gate for package installs. It parses npm, pnpm, yarn, bun, pip, and cargo commands, then flags typosquats, slopsquat-shaped names, and install-time code execution.",
+    "developerName": "Connor Dibble",
+    "category": "Security",
+    "capabilities": [
+      "Skills",
+      "CLI"
+    ],
+    "defaultPrompt": [
+      "Check this install command for risk.",
+      "Audit dependency install scripts."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

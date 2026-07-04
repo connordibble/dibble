@@ -27,6 +27,7 @@ const TOOLS = {
   "readme-audit": "plugins/readme-that-sells/skills/readme/scripts/audit-readme.mjs",
   "responsive-smells": "plugins/design-verify/skills/design-verify/scripts/responsive-smells.mjs",
   "validate-marketplace": "plugins/marketplace-kit/skills/marketplace-kit/scripts/validate-marketplace.mjs",
+  "validate-codex": "scripts/validate-codex-plugins.mjs",
 };
 
 function printHelp() {

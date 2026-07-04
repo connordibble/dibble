@@ -1,0 +1,39 @@
+{
+  "name": "design-verify",
+  "version": "1.0.0",
+  "description": "UI verification workflow with a responsive-smell linter and screenshot-loop review guidance.",
+  "author": {
+    "name": "Connor Dibble",
+    "email": "dibbleconnor@gmail.com",
+    "url": "https://connordibble.dev"
+  },
+  "homepage": "https://github.com/connordibble/dibble/tree/main/plugins/design-verify",
+  "repository": "https://github.com/connordibble/dibble",
+  "license": "MIT",
+  "keywords": [
+    "design",
+    "qa",
+    "responsive",
+    "mobile-first",
+    "visual-regression",
+    "frontend",
+    "verification"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Design Verify",
+    "shortDescription": "Check UI work for responsive and visual issues.",
+    "longDescription": "Verify UI changes by rendering and looking. It combines a static responsive-smell linter for mobile-overflow bugs with a screenshot-loop workflow for 375px and 1280px review.",
+    "developerName": "Connor Dibble",
+    "category": "Frontend",
+    "capabilities": [
+      "Skills",
+      "CLI"
+    ],
+    "defaultPrompt": [
+      "Check this UI for responsive smells.",
+      "Plan a screenshot review loop."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

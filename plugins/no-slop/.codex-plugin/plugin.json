@@ -1,0 +1,39 @@
+{
+  "name": "no-slop",
+  "version": "1.0.0",
+  "description": "Technical-writing skill and deterministic checker for machine-prose tells and evidence-light copy.",
+  "author": {
+    "name": "Connor Dibble",
+    "email": "dibbleconnor@gmail.com",
+    "url": "https://connordibble.dev"
+  },
+  "homepage": "https://github.com/connordibble/dibble/tree/main/plugins/no-slop",
+  "repository": "https://github.com/connordibble/dibble",
+  "license": "MIT",
+  "keywords": [
+    "writing",
+    "technical-writing",
+    "documentation",
+    "style",
+    "voice",
+    "readme",
+    "deslop"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "No Slop",
+    "shortDescription": "Tighten technical writing and remove machine tells.",
+    "longDescription": "Technical writing skill built on evidence-over-adjectives rules, plus a deterministic sloplint checker and a voice extractor that turns real samples into a personal voice skill.",
+    "developerName": "Connor Dibble",
+    "category": "Writing",
+    "capabilities": [
+      "Skills",
+      "CLI"
+    ],
+    "defaultPrompt": [
+      "Run a sloplint pass on this draft.",
+      "Tighten this README in my voice."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

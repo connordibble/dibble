@@ -1,0 +1,38 @@
+{
+  "name": "readme-that-sells",
+  "version": "1.0.0",
+  "description": "README and launch-copy skill with an auditor for install friction and first-example clarity.",
+  "author": {
+    "name": "Connor Dibble",
+    "email": "dibbleconnor@gmail.com",
+    "url": "https://connordibble.dev"
+  },
+  "homepage": "https://github.com/connordibble/dibble/tree/main/plugins/readme-that-sells",
+  "repository": "https://github.com/connordibble/dibble",
+  "license": "MIT",
+  "keywords": [
+    "readme",
+    "documentation",
+    "developer-tools",
+    "launch",
+    "marketing",
+    "open-source"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "README That Sells",
+    "shortDescription": "Audit README clarity, install flow, and examples.",
+    "longDescription": "Write and audit developer-tool READMEs and launch copy. The skill focuses the first screen on what it is, whether it works, and how to try it.",
+    "developerName": "Connor Dibble",
+    "category": "Documentation",
+    "capabilities": [
+      "Skills",
+      "CLI"
+    ],
+    "defaultPrompt": [
+      "Audit this README for first-use friction.",
+      "Improve this tool README opening."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

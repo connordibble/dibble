@@ -1,7 +1,7 @@
 {
   "name": "dibble",
   "version": "1.0.0",
-  "description": "Guardrails and craft for coding agents: design-token enforcement, supply-chain gates, config auditing, evidence-linked writing. Claude Code plugin marketplace plus the same checkers as npx CLIs.",
+  "description": "Guardrails and craft for coding agents: design-token enforcement, supply-chain gates, config auditing, evidence-linked writing. Claude Code and Codex plugin metadata plus the same checkers as npx CLIs.",
   "license": "MIT",
   "author": {
     "name": "Connor Dibble",
@@ -18,6 +18,7 @@
   },
   "keywords": [
     "claude-code",
+    "codex",
     "agent-skills",
     "plugins",
     "marketplace",
@@ -38,7 +39,8 @@
     "dibble-zod-lint": "plugins/zod-first-tools/skills/zod-first-tools/scripts/lint-tools.mjs",
     "dibble-readme-audit": "plugins/readme-that-sells/skills/readme/scripts/audit-readme.mjs",
     "dibble-responsive-smells": "plugins/design-verify/skills/design-verify/scripts/responsive-smells.mjs",
-    "dibble-validate-marketplace": "plugins/marketplace-kit/skills/marketplace-kit/scripts/validate-marketplace.mjs"
+    "dibble-validate-marketplace": "plugins/marketplace-kit/skills/marketplace-kit/scripts/validate-marketplace.mjs",
+    "dibble-validate-codex": "scripts/validate-codex-plugins.mjs"
   },
   "files": [
     "bin",
@@ -47,7 +49,9 @@
     "examples",
     "plugins",
     "!plugins/*/tests",
+    "scripts/validate-codex-plugins.mjs",
     ".claude-plugin",
+    ".agents",
     "SECURITY.md"
   ],
   "packageManager": "pnpm@10.33.0",
@@ -59,7 +63,7 @@
   },
   "scripts": {
     "test": "node --test plugins/*/tests/*.test.mjs",
-    "validate": "node plugins/marketplace-kit/skills/marketplace-kit/scripts/validate-marketplace.mjs .",
+    "validate": "node plugins/marketplace-kit/skills/marketplace-kit/scripts/validate-marketplace.mjs . && node scripts/validate-codex-plugins.mjs .",
     "lint:prose": "node plugins/no-slop/skills/writing/scripts/sloplint.mjs --strict README.md plugins/*/README.md plugins/*/skills/*/SKILL.md",
     "lint:readmes": "node scripts/audit-readmes.mjs",
     "sync-versions": "node scripts/sync-versions.mjs",

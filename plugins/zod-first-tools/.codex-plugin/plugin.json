@@ -1,0 +1,40 @@
+{
+  "name": "zod-first-tools",
+  "version": "1.0.0",
+  "description": "Build LLM tool definitions and MCP servers from one Zod schema instead of parallel schema definitions.",
+  "author": {
+    "name": "Connor Dibble",
+    "email": "dibbleconnor@gmail.com",
+    "url": "https://connordibble.dev"
+  },
+  "homepage": "https://github.com/connordibble/dibble/tree/main/plugins/zod-first-tools",
+  "repository": "https://github.com/connordibble/dibble",
+  "license": "MIT",
+  "keywords": [
+    "zod",
+    "mcp",
+    "tool-use",
+    "structured-output",
+    "json-schema",
+    "anthropic",
+    "openai",
+    "typescript"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Zod-First Tools",
+    "shortDescription": "Keep LLM tool schemas derived from Zod.",
+    "longDescription": "Build LLM tool definitions and MCP servers from one Zod schema instead of two. The skill covers provider derivation patterns and the linter flags hand-written schema drift.",
+    "developerName": "Connor Dibble",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Skills",
+      "CLI"
+    ],
+    "defaultPrompt": [
+      "Review this LLM tool schema.",
+      "Find hand-written schema drift."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

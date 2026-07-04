@@ -13,13 +13,15 @@ hoping the instructions stuck.
 Every plugin's skill and CLI script ship as a portable
 [Agent Skill](https://agentskills.io) — no Claude Code APIs, so the knowledge
 and the checkers both work as-is in **Codex, Cursor, and Gemini CLI**, and in
-CI on any platform. Automatic enforcement (hooks that trigger without being
-asked, namespaced slash commands, one-command marketplace install) is Claude
-Code plugin packaging on top of that, and is Claude-Code-specific. See
+CI on any platform. Claude Code gets a Claude marketplace for hooks and slash
+commands; Codex gets a separate Codex marketplace sidecar that installs the
+same skills without claiming Claude-only hook behavior. See
 [docs/compatibility.md](docs/compatibility.md) for exactly which layer each
 plugin has.
 
 ## Install
+
+### Claude Code
 
 ```
 /plugin marketplace add connordibble/dibble
@@ -34,6 +36,19 @@ Then install any plugin from the catalog:
 Add the marketplace once; every plugin below (and every one added later) shows
 up in your `/plugin` browser.
 
+### Codex
+
+```bash
+codex plugin marketplace add connordibble/dibble
+codex plugin marketplace upgrade dibble
+```
+
+Then install from the Codex plugin browser. Codex installs the skill layer and
+the same CLI-backed workflows. Claude-specific PreToolUse/PostToolUse hooks and
+namespaced slash commands stay Claude-only.
+
+### CI and npm
+
 Every checker also ships on npm, so CI can run the same rules without
 installing a plugin:
 
@@ -42,10 +57,12 @@ npx dibble sloplint --strict docs/*.md
 npx dibble tokenlock src/
 npx dibble token-drift tokens/figma.tokens.json src/app/globals.css
 npx dibble validate-marketplace .
+npx dibble validate-codex .
 ```
 
 `npx dibble --help` lists every tool (also `agent-audit`, `install-gate`,
-`token-drift`, `receipts`, `zod-lint`, `readme-audit`, `responsive-smells`).
+`token-drift`, `receipts`, `zod-lint`, `readme-audit`, `responsive-smells`,
+`validate-codex`).
 Each tool also publishes its own bin (`dibble-tokenlock`,
 `dibble-token-drift`, `dibble-sloplint`, ...) for when only one is installed as
 a project dependency rather than run ad hoc.
@@ -94,8 +111,10 @@ what the pipeline enforces.
 
 This repo holds itself to what it sells. On every push, CI runs:
 
-- **marketplace-kit** validates the whole catalog (structure, versions, hook
-  references) — the plugin validating its own marketplace
+- **marketplace-kit** validates the Claude Code catalog (structure, versions,
+  hook references) — the plugin validating its own marketplace
+- **validate-codex-plugins** validates the Codex sidecar marketplace and every
+  `.codex-plugin/plugin.json`
 - **90+ tests** across every script (`node --test`)
 - **sloplint** (`--strict`) on the root README, plugin READMEs, and every
   catalog SKILL.md

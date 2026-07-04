@@ -1,0 +1,39 @@
+{
+  "name": "agent-audit",
+  "version": "1.0.0",
+  "description": "Read-only security audit for agent configuration, hooks, MCP endpoints, permissions, and inline credentials.",
+  "author": {
+    "name": "Connor Dibble",
+    "email": "dibbleconnor@gmail.com",
+    "url": "https://connordibble.dev"
+  },
+  "homepage": "https://github.com/connordibble/dibble/tree/main/plugins/agent-audit",
+  "repository": "https://github.com/connordibble/dibble",
+  "license": "MIT",
+  "keywords": [
+    "security",
+    "audit",
+    "supply-chain",
+    "mcp",
+    "hooks",
+    "hygiene",
+    "agent-config"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Agent Audit",
+    "shortDescription": "Audit agent config for risky hooks and permissions.",
+    "longDescription": "Read-only security audit for agent setup. It flags hijacked-hook patterns, permission creep, plaintext MCP endpoints, inline credentials, and unpinned session-start packages.",
+    "developerName": "Connor Dibble",
+    "category": "Security",
+    "capabilities": [
+      "Skills",
+      "CLI"
+    ],
+    "defaultPrompt": [
+      "Audit this agent config for risks.",
+      "Review MCP and hook settings."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

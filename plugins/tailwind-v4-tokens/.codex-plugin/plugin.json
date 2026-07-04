@@ -1,0 +1,38 @@
+{
+  "name": "tailwind-v4-tokens",
+  "version": "1.0.0",
+  "description": "Tailwind CSS v4 theming knowledge for token-first themes, dark mode, @theme, and migration reviews.",
+  "author": {
+    "name": "Connor Dibble",
+    "email": "dibbleconnor@gmail.com",
+    "url": "https://connordibble.dev"
+  },
+  "homepage": "https://github.com/connordibble/dibble/tree/main/plugins/tailwind-v4-tokens",
+  "repository": "https://github.com/connordibble/dibble",
+  "license": "MIT",
+  "keywords": [
+    "tailwind",
+    "tailwindcss",
+    "design-tokens",
+    "theming",
+    "dark-mode",
+    "css",
+    "migration"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Tailwind v4 Tokens",
+    "shortDescription": "Review Tailwind v4 themes and token wiring.",
+    "longDescription": "Tailwind CSS v4 theming knowledge for agents: @theme vs :root, token-first dark mode with @theme inline, spacing-scale shadowing, @apply in scoped styles, and v3 migration.",
+    "developerName": "Connor Dibble",
+    "category": "Design",
+    "capabilities": [
+      "Skills"
+    ],
+    "defaultPrompt": [
+      "Review this Tailwind v4 theme setup.",
+      "Explain this @theme token issue."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

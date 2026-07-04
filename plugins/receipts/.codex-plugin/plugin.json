@@ -1,0 +1,39 @@
+{
+  "name": "receipts",
+  "version": "1.0.0",
+  "description": "Evidence-linked summaries where every claim traces to a verbatim quote from a source file.",
+  "author": {
+    "name": "Connor Dibble",
+    "email": "dibbleconnor@gmail.com",
+    "url": "https://connordibble.dev"
+  },
+  "homepage": "https://github.com/connordibble/dibble/tree/main/plugins/receipts",
+  "repository": "https://github.com/connordibble/dibble",
+  "license": "MIT",
+  "keywords": [
+    "evidence",
+    "summarization",
+    "citations",
+    "fact-check",
+    "postmortem",
+    "synthesis",
+    "trust"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Receipts",
+    "shortDescription": "Make summaries trace claims back to source quotes.",
+    "longDescription": "Evidence-linked summaries for postmortems, PR descriptions, research, and feedback digests. The checker verifies that each quote appears in its source and catches altered quotes.",
+    "developerName": "Connor Dibble",
+    "category": "Writing",
+    "capabilities": [
+      "Skills",
+      "CLI"
+    ],
+    "defaultPrompt": [
+      "Check this summary against sources.",
+      "Make this claim cite a quote."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

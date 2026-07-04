@@ -1,0 +1,140 @@
+{
+  "name": "dibble",
+  "interface": {
+    "displayName": "Dibble"
+  },
+  "plugins": [
+    {
+      "name": "tokenlock",
+      "source": {
+        "source": "local",
+        "path": "./plugins/tokenlock"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Design"
+    },
+    {
+      "name": "token-drift",
+      "source": {
+        "source": "local",
+        "path": "./plugins/token-drift"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Design"
+    },
+    {
+      "name": "no-slop",
+      "source": {
+        "source": "local",
+        "path": "./plugins/no-slop"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Writing"
+    },
+    {
+      "name": "tailwind-v4-tokens",
+      "source": {
+        "source": "local",
+        "path": "./plugins/tailwind-v4-tokens"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Design"
+    },
+    {
+      "name": "agent-audit",
+      "source": {
+        "source": "local",
+        "path": "./plugins/agent-audit"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Security"
+    },
+    {
+      "name": "install-gate",
+      "source": {
+        "source": "local",
+        "path": "./plugins/install-gate"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Security"
+    },
+    {
+      "name": "receipts",
+      "source": {
+        "source": "local",
+        "path": "./plugins/receipts"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Writing"
+    },
+    {
+      "name": "zod-first-tools",
+      "source": {
+        "source": "local",
+        "path": "./plugins/zod-first-tools"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "readme-that-sells",
+      "source": {
+        "source": "local",
+        "path": "./plugins/readme-that-sells"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Documentation"
+    },
+    {
+      "name": "design-verify",
+      "source": {
+        "source": "local",
+        "path": "./plugins/design-verify"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Frontend"
+    },
+    {
+      "name": "marketplace-kit",
+      "source": {
+        "source": "local",
+        "path": "./plugins/marketplace-kit"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}
