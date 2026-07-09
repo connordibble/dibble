@@ -75,7 +75,9 @@ what the pipeline enforces.
 The skill and scanner follow the [Agent Skills](https://agentskills.io) layout:
 everything lives in `skills/tokenlock/`, including `scripts/scan.mjs`. Copy
 that directory into your tool's skills location and the audit workflow works
-as-is. The automatic per-edit hook is Claude Code-specific.
+as-is. The automatic per-edit hook runs on Claude Code and Codex (the matcher
+covers Codex's `apply_patch` alongside `Write`/`Edit`); Cursor and Gemini CLI
+get the skill and CLI, run on demand.
 
 ## Limitations, honestly
 

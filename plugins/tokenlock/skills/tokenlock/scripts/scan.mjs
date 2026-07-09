@@ -231,24 +231,56 @@ function formatReport(results, config) {
 // Entry points
 // ---------------------------------------------------------------------------
 
+// Extract the edited file path(s) from a PostToolUse payload. Different agents
+// shape tool_input differently: Claude Code's Write/Edit use `file_path`;
+// Codex's apply_patch carries a patch envelope (`*** Update File: path`) that
+// can touch several files at once. Pull paths from whichever shape is present
+// so the same hook fires on both. Unknown shapes yield nothing, so the hook
+// no-ops rather than guessing.
+function hookFilePaths(payload) {
+  const input = payload?.tool_input;
+  if (!input) return [];
+  const paths = new Set();
+
+  // Claude Code Write/Edit (and common single-file variants).
+  for (const key of ["file_path", "path", "filePath", "notebook_path"]) {
+    if (typeof input[key] === "string") paths.add(input[key]);
+  }
+
+  // Codex apply_patch envelope: scan any string field (or the whole input if it
+  // is a string) for `*** Add/Update/Move File:` markers.
+  const patchBlobs = [
+    typeof input === "string" ? input : null,
+    ...["input", "patch", "content", "text", "diff"].map((k) => (typeof input[k] === "string" ? input[k] : null)),
+  ].filter(Boolean);
+  const marker = /^\*\*\* (?:Add|Update|Move(?: to)?) File:\s*(.+?)\s*$/gm;
+  for (const blob of patchBlobs) {
+    for (const m of blob.matchAll(marker)) paths.add(m[1]);
+  }
+  return [...paths];
+}
+
 function runHookMode() {
   let input = "";
   try { input = readFileSync(0, "utf8"); } catch { process.exit(0); }
   let payload;
   try { payload = JSON.parse(input); } catch { process.exit(0); }
 
-  const filePath = payload?.tool_input?.file_path;
-  if (!filePath || !existsSync(filePath)) process.exit(0);
+  const candidates = hookFilePaths(payload).filter((p) => existsSync(p));
+  if (!candidates.length) process.exit(0);
 
-  const projectRoot = findProjectRoot(dirname(filePath));
+  // All edited files share a project root; derive it from the first one.
+  const projectRoot = findProjectRoot(dirname(resolve(candidates[0])));
   const config = loadConfig(projectRoot);
   if (config.mode === "off") process.exit(0);
 
   const index = buildTokenIndex(discoverTokenFiles(projectRoot, config, config.ignore), projectRoot);
-  const violations = scanFile(filePath, config, index);
-  if (!violations.length) process.exit(0);
+  const results = candidates
+    .map((filePath) => ({ file: relative(projectRoot, filePath), violations: scanFile(filePath, config, index) }))
+    .filter((r) => r.violations.length);
+  if (!results.length) process.exit(0);
 
-  const { text } = formatReport([{ file: relative(projectRoot, filePath), violations }], config);
+  const { text } = formatReport(results, config);
   if (config.mode === "warn") {
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: { hookEventName: "PostToolUse", additionalContext: text },

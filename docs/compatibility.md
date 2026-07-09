@@ -13,12 +13,16 @@ plugin. Those Codex manifests point at the existing portable `skills/`
 directories and use source paths such as `./plugins/design-verify`, so Codex
 can install the plugin instead of only rendering the Claude marketplace card.
 
-**What still does not travel** is Claude Code's automatic hook and slash-command
-layer. tokenlock and install-gate still need explicit checker runs or CI outside
-Claude Code because PreToolUse/PostToolUse hooks are Claude Code plugin
-mechanics. Claude slash commands also remain Claude-only.
+**Automatic hooks now travel to Codex too.** Codex supports the same
+PreToolUse/PostToolUse hook events as Claude Code, auto-discovers a plugin's
+bundled `hooks/hooks.json`, and honors `CLAUDE_PLUGIN_ROOT` for compatibility,
+so tokenlock and install-gate enforce automatically on both. tokenlock's
+matcher covers Codex's `apply_patch` tool alongside Claude's `Write`/`Edit`, and
+its hook reads the file path from either payload shape. What stays Claude-only
+is slash commands; Cursor and Gemini CLI run the skills and CLIs but not the
+automatic hooks.
 
-| Plugin | Skill (portable) | Codex plugin | CLI script | Claude hook | Claude command | CI usable |
+| Plugin | Skill (portable) | Codex plugin | CLI script | Auto hook (Claude + Codex) | Claude command | CI usable |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: |
 | [tokenlock](../plugins/tokenlock) | ✅ | ✅ | ✅ | ✅ PostToolUse | n/a | ✅ |
 | [token-drift](../plugins/token-drift) | ✅ | ✅ | ✅ | n/a | n/a | ✅ |
@@ -39,11 +43,17 @@ mechanics. Claude slash commands also remain Claude-only.
 The Codex sidecar exposes the portable skills and keeps every plugin source
 path under `./plugins/<name>`.
 
-**On Codex, Cursor, or Gemini CLI:** every skill's knowledge applies, and every
-CLI script runs the same way (`node skills/<name>/scripts/<script>.mjs ...`, or
-via `npx dibble <name> ...` once published). What you lose outside Claude Code
-is automatic triggering: tokenlock and install-gate won't intercept a tool call
-on their own. Run the checker explicitly, or in CI.
+**On Codex:** the hooks fire automatically once the plugin is installed, so
+tokenlock and install-gate intercept edits and installs the same way they do in
+Claude Code. (The hook wiring is verified against Codex's documented hook
+system; end-to-end confirmation on a live Codex install is tracked in
+[HANDOFF.md](../HANDOFF.md).)
+
+**On Cursor or Gemini CLI:** every skill's knowledge applies and every CLI
+script runs the same way (`node skills/<name>/scripts/<script>.mjs ...`, or via
+`npx dibble <name> ...`), but there is no automatic hook layer. tokenlock and
+install-gate won't intercept a tool call on their own there; run the checker
+explicitly, or in CI.
 
 **In CI, on any platform:** every checker is a deterministic script with
 sensible exit codes (0 clean, 1 or 2 on findings) and most support `--json`.

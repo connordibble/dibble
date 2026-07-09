@@ -24,6 +24,10 @@ function runHook(filePath) {
   });
 }
 
+function runHookPayload(payload) {
+  return spawnSync("node", [SCRIPT, "--hook"], { input: JSON.stringify(payload), encoding: "utf8" });
+}
+
 function runAudit(args) {
   return spawnSync("node", [SCRIPT, ...args], { encoding: "utf8", cwd: root });
 }
@@ -94,6 +98,29 @@ test("clean files, allowed values, ignore markers, and comments pass silently", 
 
 test("token definition files are exempt", () => {
   const r = runHook(join(root, "src/app/globals.css"));
+  assert.equal(r.status, 0, r.stderr);
+});
+
+test("hook fires on a Codex apply_patch payload (Update File envelope)", () => {
+  const f = write("src/components/Codex.tsx", `<div className="bg-zinc-900" />`);
+  const patch = `*** Begin Patch\n*** Update File: ${f}\n@@\n+<div className="bg-zinc-900" />\n*** End Patch\n`;
+  const r = runHookPayload({ hook_event_name: "PostToolUse", tool_name: "apply_patch", tool_input: { input: patch } });
+  assert.equal(r.status, 2, r.stderr);
+  assert.match(r.stderr, /bg-zinc-900/);
+});
+
+test("hook scans every file in a multi-file apply_patch", () => {
+  const a = write("src/components/A.tsx", `<div className="text-red-500" />`);
+  const b = write("src/components/B.tsx", `<div className="border-blue-600" />`);
+  const patch = `*** Begin Patch\n*** Update File: ${a}\n*** Add File: ${b}\n*** End Patch\n`;
+  const r = runHookPayload({ hook_event_name: "PostToolUse", tool_name: "apply_patch", tool_input: { input: patch } });
+  assert.equal(r.status, 2, r.stderr);
+  assert.match(r.stderr, /text-red-500/);
+  assert.match(r.stderr, /border-blue-600/);
+});
+
+test("hook no-ops on an unknown payload shape rather than crashing", () => {
+  const r = runHookPayload({ hook_event_name: "PostToolUse", tool_name: "apply_patch", tool_input: { unexpected: true } });
   assert.equal(r.status, 0, r.stderr);
 });
 

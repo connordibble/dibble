@@ -29,7 +29,8 @@
     "category": "Security",
     "capabilities": [
       "Skills",
-      "CLI"
+      "CLI",
+      "Hooks"
     ],
     "defaultPrompt": [
       "Check this install command for risk.",

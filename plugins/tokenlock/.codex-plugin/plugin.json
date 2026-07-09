@@ -28,7 +28,8 @@
     "category": "Design",
     "capabilities": [
       "Skills",
-      "CLI"
+      "CLI",
+      "Hooks"
     ],
     "defaultPrompt": [
       "Check this change for hardcoded colors.",
