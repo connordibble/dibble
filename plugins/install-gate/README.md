@@ -20,7 +20,8 @@ install-gate flagged: pnpm add chalt
 | --- | --- | --- |
 | Typosquats | `chalt`, `reqeusts`, `lodahs` | **deny** |
 | Scope impersonation | `@type/node` vs `@types/node` | **deny** |
-| Install-time execution | `--allow-scripts`, `--unsafe-perm`, `sudo pip install` | **deny** |
+| Explicit script approval | pnpm `--allow-scripts` | **deny** |
+| Root Python install | `sudo pip install` | **deny** |
 | Slopsquat-shaped names | `ai-utils-helper` (the names models invent) | **verify** it exists first |
 | Non-registry sources | git URLs, tarballs | **verify** the origin consciously |
 
@@ -34,10 +35,10 @@ approval flow intact. Chained commands are parsed too, so
 
 The gate makes no network calls. An install should never wait on a third
 party, and a security hook that phones home is its own supply-chain surface.
-Instead it ships popularity lists per ecosystem (a typosquat magnet set) and
-tells the agent exactly what to verify against the registry when a name is
-merely suspicious. The verification step is one `npm view` away and the skill
-teaches it.
+Instead it ships a deliberately bounded typosquat magnet set: 123 npm names,
+83 Python names, and 59 Cargo names. It tells the agent exactly what to verify
+against the registry when a name is merely suspicious. The verification step
+is one `npm view` away and the skill teaches it.
 
 ## Install
 
@@ -55,10 +56,13 @@ node skills/install-gate/scripts/gate.mjs "npm install foo" && echo ok
 ## Honest limits
 
 Heuristic and offline by design. It cannot see download counts, package age,
-or advisories, and it won't catch a compromised version of a correctly-named
-popular package; that's what lockfiles and `npm audit`/`pip-audit` in CI are
-for. An exotic-but-real package may draw a VERIFY prompt; that is the tool
-working, not failing. See [agent-audit](../agent-audit) for the
-config-integrity layer of the same story.
+advisories, or registry metadata such as lifecycle scripts. npm and pnpm may
+run lifecycle scripts by default even without a special flag. Use
+`--ignore-scripts` when evaluating an unfamiliar package, then inspect and
+allow only the scripts you trust. The gate also cannot catch a compromised
+version of a correctly named popular package; that is where lockfiles and
+`npm audit`/`pip-audit` in CI apply. An exotic but real package may draw a
+VERIFY prompt. See [agent-audit](../agent-audit) for the config-integrity layer
+of the same story.
 
 Part of the [dibble](../../README.md) catalog. MIT.

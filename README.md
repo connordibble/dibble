@@ -1,58 +1,96 @@
 # dibble
 
-**Guardrails and craft for coding agents.** Deterministic hooks where judgment
-isn't needed, sharp skills where it is.
+**The engineering context I carry between coding agents.**
 
-Agents are fast and forgetful. They know your project has design tokens and
-write `bg-zinc-900` anyway; they summarize convincingly and drift from the
-evidence; they install a package a model hallucinated. dibble is a catalog of
-small, focused plugins that give an agent your system's constraints, taste, and
-evidence standards, and enforce them at the moment work happens rather than
-hoping the instructions stuck.
+I use Claude and GPT for different parts of software work. The models are good
+at different things, but I kept carrying the same instructions between them:
+use the design system, check the package before installing it, derive the tool
+schema from Zod, render the UI before calling it done, and keep summaries tied
+to their evidence.
 
-Every plugin's skill and CLI script ship as a portable
-[Agent Skill](https://agentskills.io) — no Claude Code APIs, so the knowledge
-and the checkers both work as-is in **Codex, Cursor, and Gemini CLI**, and in
-CI on any platform. Claude Code gets a Claude marketplace for hooks and slash
-commands; Codex gets a separate Codex marketplace sidecar that installs the
-same skills without claiming Claude-only hook behavior. See
-[docs/compatibility.md](docs/compatibility.md) for exactly which layer each
-plugin has.
+dibble packages those repeated instructions and checks as portable plugins.
+Some teach a focused workflow. Others enforce a deterministic rule through a
+hook or CLI. The same checkers run in CI, so the contract survives when a human
+or another model edits the code.
+
+**The model can change. The engineering contract stays put.**
+
+## Try it
+
+Install the CLI in a project and inspect its agent plugins:
+
+```bash
+npm install --save-dev dibble
+npx dibble plugin-inspector .
+```
+
+The same package contains every deterministic checker. Native Claude Code and
+Codex installation is covered below.
+
+## One working loop
+
+The plugins follow the same loop I use while working with an agent:
+
+| Stage | Question | Plugins |
+| --- | --- | --- |
+| **Trust the inputs** | What can this package, plugin, or agent configuration execute? | [install-gate](plugins/install-gate), [agent-audit](plugins/agent-audit), [plugin-inspector](plugins/plugin-inspector) |
+| **Guide the work** | Which engineering standards should survive the model boundary? | [tokenlock](plugins/tokenlock), [tailwind-v4-tokens](plugins/tailwind-v4-tokens), [zod-first-tools](plugins/zod-first-tools), [no-slop](plugins/no-slop) |
+| **Verify the result** | What evidence should exist before the work is accepted? | [design-verify](plugins/design-verify), [token-drift](plugins/token-drift), [receipts](plugins/receipts), [readme-that-sells](plugins/readme-that-sells) |
+
+A frontend change makes the loop concrete. `install-gate` checks an unfamiliar
+dependency before it enters the project. `tokenlock` keeps the implementation
+on the design system. `design-verify` checks the rendered result. CI runs the
+same deterministic checks again after the conversation ends.
+
+## Start with the failure you recognize
+
+You do not need the whole catalog to get value from one plugin.
+
+- **Safer agent setup:** start with `install-gate` and `agent-audit`.
+- **Frontend work:** start with `tokenlock`, `token-drift`, and
+  `design-verify`.
+- **Evidence-backed writing:** start with `receipts` and `no-slop`.
+- **Agent tooling:** start with `zod-first-tools` and `plugin-inspector`.
+
+Each plugin is installed separately. Pick the repeated failure mode you already
+have.
 
 ## Install
 
 ### Claude Code
 
-```
+Add the marketplace once:
+
+```text
 /plugin marketplace add connordibble/dibble
 ```
 
-Then install any plugin from the catalog:
+Then install the plugin you want:
 
-```
+```text
 /plugin install tokenlock@dibble
 ```
-
-Add the marketplace once; every plugin below (and every one added later) shows
-up in your `/plugin` browser.
 
 ### Codex
 
 ```bash
 codex plugin marketplace add connordibble/dibble
 codex plugin marketplace upgrade dibble
+codex plugin add tokenlock@dibble
 ```
 
-Then install from the Codex plugin browser. Codex installs the skill layer and
-the same CLI-backed workflows. Claude-specific PreToolUse/PostToolUse hooks and
-namespaced slash commands stay Claude-only.
+Codex installs the portable skills and bundled command hooks. For `tokenlock`
+and `install-gate`, open `/hooks`, inspect the command, and trust its current
+definition before expecting automatic enforcement. Namespaced slash commands
+remain specific to Claude Code.
+
+See [docs/compatibility.md](docs/compatibility.md) for the exact capability
+available on each host.
 
 ### CI and npm
 
-Every checker also ships on npm, so CI can run the same rules without
-installing a plugin. Run these from the project you want to check, and replace
-the paths with real paths in that project. `npx` still uses your current
-working directory.
+Every deterministic checker also ships through npm. It runs from the current
+working directory and needs no plugin host:
 
 ```bash
 npx dibble sloplint --strict README.md docs
@@ -61,79 +99,101 @@ npx dibble token-drift path/to/figma.tokens.json path/to/globals.css
 npx dibble plugin-inspector .
 ```
 
-`npx dibble --help` lists every tool (also `agent-audit`, `install-gate`,
-`token-drift`, `receipts`, `zod-lint`, `readme-audit`, `responsive-smells`,
-and compatibility aliases for the previous marketplace validators).
-Each tool also publishes its own bin (`dibble-tokenlock`,
-`dibble-token-drift`, `dibble-sloplint`, ...) for when only one is installed as
-a project dependency rather than run ad hoc.
+`npx dibble --help` lists every command, including `agent-audit`,
+`install-gate`, `receipts`, `zod-lint`, `readme-audit`, and
+`responsive-smells`. Each checker also publishes its own bin for projects that
+install `dibble` as a dependency.
 
-Don't want to set anything up first: [examples/](examples/) has runnable
-fixtures for every plugin with a checker, each with a copy-paste command that
-finds the issue.
+[examples/](examples/) contains a runnable failure for every plugin with a
+checker. Each example takes one command and a few seconds.
 
-## The catalog
+## Trust the inputs
 
-| Plugin | What it does | Enforcement |
+| Plugin | Repeated problem | Mechanism |
 | --- | --- | --- |
-| [tokenlock](plugins/tokenlock) | Catches hardcoded colors and raw Tailwind palette utilities on every edit, and suggests the matching token from your files | PostToolUse hook + audit + CI |
-| [token-drift](plugins/token-drift) | Compares Figma Variables or DTCG exports against CSS custom properties, with alias-aware value checks and presence-gap warnings | Skill + checker + CI |
-| [install-gate](plugins/install-gate) | Blocks typosquats and install-time code execution, flags hallucinated package names before install | PreToolUse hook + CLI |
-| [agent-audit](plugins/agent-audit) | Read-only security audit of your agent config: hijacked hooks, permission creep, plaintext MCP, inline secrets | `/agent-audit:audit` command + CLI |
-| [receipts](plugins/receipts) | Evidence-linked summaries where every claim traces to a verbatim quote; catches quotes that were subtly reworded | Skill + checker + CI |
-| [no-slop](plugins/no-slop) | Technical writing without the machine-prose tells, plus a voice extractor that builds a personal voice skill from your writing | Skill + sloplint + CI |
-| [design-verify](plugins/design-verify) | Renders UI changes and critiques them at 375px/1280px; static linter for mobile-overflow bugs | `/design-verify:verify` command + linter |
-| [tailwind-v4-tokens](plugins/tailwind-v4-tokens) | The Tailwind v4 theming knowledge behind the enforcement: `@theme`, token-first dark mode, the spacing-shadow trap | Skill |
-| [zod-first-tools](plugins/zod-first-tools) | Build LLM tool definitions and MCP servers from one Zod schema; linter flags a hand-written schema beside it | Skill + linter + CI |
-| [readme-that-sells](plugins/readme-that-sells) | README and launch copy built around the conversion funnel; auditor measures time-to-install and time-to-example | Skill + auditor + CI |
-| [plugin-inspector](plugins/plugin-inspector) | Validates Claude Code and ChatGPT/Codex plugin packages, then reports executable and network authority | `/plugin-inspector:inspect` command + validator + CI |
+| [install-gate](plugins/install-gate) | An agent installs a typo, an invented package, or a source that deserves review | PreToolUse hook plus an offline CLI for npm, pnpm, yarn, bun, pip, and cargo |
+| [agent-audit](plugins/agent-audit) | A hook, permission, or MCP entry changes the authority of the agent | Read-only Claude Code and Codex configuration audit |
+| [plugin-inspector](plugins/plugin-inspector) | A plugin package looks valid without showing what it can execute or contact | Dual-host validator plus execution, network, and installation authority inventory |
 
-## The idea behind the catalog
+## Guide the work
 
-An agent should inherit your system's taste, constraints, and evidence
-standards, not the average of its training data. Each plugin proves one piece of
-that:
+| Plugin | Repeated problem | Mechanism |
+| --- | --- | --- |
+| [tokenlock](plugins/tokenlock) | Generated UI bypasses the design system with raw colors or Tailwind palette utilities | PostToolUse enforcement, audit CLI, and CI check |
+| [tailwind-v4-tokens](plugins/tailwind-v4-tokens) | Tailwind v4 theming drifts across `@theme`, dark mode, and legacy configuration | Focused knowledge skill for token-first Tailwind work |
+| [zod-first-tools](plugins/zod-first-tools) | Runtime validation and model-facing tool schemas become two contracts | Provider and MCP patterns derived from one Zod schema, plus a drift linter |
+| [no-slop](plugins/no-slop) | Technical writing loses evidence and starts sounding like the average model output | Writing and voice skills plus deterministic prose checks |
 
-- **Taste and constraints:** tokenlock and tailwind-v4-tokens keep styling on
-  your design system; design-verify confirms it renders right.
-- **Evidence standards:** receipts makes summaries prove themselves; no-slop
-  strips the adjectives that hide missing evidence.
-- **Safety:** install-gate and agent-audit cover the two agent supply-chain
-  surfaces (what gets installed, and what rewrote your config).
-- **Craft for builders:** zod-first-tools, readme-that-sells, and
-  plugin-inspector are the tools you use to ship the rest.
+## Verify the result
 
-A recurring pattern: put the deterministic logic in a script inside the skill,
-then have the plugin's hook call it. So the rule that governs your agent is the
-same rule that governs your CI. No divergence between what the agent is told and
-what the pipeline enforces.
+| Plugin | Repeated problem | Mechanism |
+| --- | --- | --- |
+| [design-verify](plugins/design-verify) | UI work compiles without looking right at real viewport widths | Static responsive checks plus a browser-backed review loop |
+| [token-drift](plugins/token-drift) | Design tokens and code-side CSS variables disagree | DTCG and CSS comparison with alias, `$ref`, type, and cycle handling |
+| [receipts](plugins/receipts) | A clean summary drifts away from its sources | Verbatim evidence format plus quote verification |
+| [readme-that-sells](plugins/readme-that-sells) | A developer tool is documented without a quick path to understanding or trying it | README workflow plus structural audit |
+
+## How the contract travels
+
+Every plugin ships its knowledge as a portable
+[Agent Skill](https://agentskills.io). The skills are Markdown, and their
+checkers are zero-dependency Node scripts. Claude Code and Codex get native
+marketplace metadata. Other Agent Skill hosts can use the same skill directory,
+while npm and CI run the deterministic layer directly.
+
+The boundary is deliberate. A skill carries judgment and context. A script
+handles rules that should return the same result regardless of which model or
+person produced the work. Hooks put those rules at the point of action. CI
+keeps them after the session is gone.
+
+## What dibble does not do
+
+dibble does not make Claude and GPT behave identically. Skills still depend on
+the model following their instructions, browser-backed verification depends on
+the host exposing a browser, and command hooks follow each host's trust and
+approval rules. The deterministic scripts cover the parts that can return the
+same answer everywhere.
+
+The catalog is also early. Its package contracts and fixtures are tested, but
+external adoption is still the evidence it needs next.
 
 ## Quality bar
 
-This repo holds itself to what it sells. On every push, CI runs:
+This repository is governed by the plugins it ships:
 
-- **plugin-inspector** validates both marketplace formats, every local plugin
-  manifest, component paths, and declared authority — the plugin inspecting its
-  own package
-- **127 tests** across every deterministic script, with a **95% line-coverage
-  floor** enforced in CI (`pnpm test:coverage` currently reports 95.68%)
-- **60 behavioral cases** cover direct and indirect activation, missing
-  context, non-activation, and unsafe edges for all 12 skills; plugin-inspector
-  fails if a skill loses coverage
-- **sloplint** (`--strict`) on the root README, plugin READMEs, and every
-  catalog SKILL.md
-- the root README and every plugin README pass **readme-that-sells**' own
-  auditor
+- `plugin-inspector` validates both marketplace formats, every local manifest,
+  component paths, evaluation coverage, and declared authority.
+- 148 tests run across every deterministic script. CI enforces a 95% line
+  coverage floor, currently 95.61%, plus focused branch floors for the three
+  security-oriented checkers.
+- 60 behavioral cases cover direct activation, indirect activation, missing
+  context, non-activation, and unsafe edges for all 12 skills.
+- `sloplint --strict` checks the root README, plugin READMEs, and every skill.
+- `readme-that-sells` audits the root README and every plugin README.
 
-Each plugin is self-contained (skills, scripts, tests, README) so it can be read
-and trusted on its own.
+Each plugin remains self-contained, with its own skill, script where useful,
+tests, example, and README. A reviewer can inspect one without trusting the
+rest of the catalog.
+
+## Contributing
+
+The useful starting question is: **what engineering instruction do you keep
+repeating to coding agents?**
+
+A good contribution encodes a recurring decision, catches a failure the model
+regularly misses, or adds evidence before work is accepted. If the rule can be
+checked deterministically, its script should also run outside the agent. If it
+cannot work across hosts, document the boundary plainly.
+
+Issues and contributions are welcome.
 
 ## Author
 
 Built by [Connor Dibble](https://connordibble.dev). The design-system and
-evidence plugins come out of production work: an enterprise design system used
-by 1000+ engineers, an AI feedback platform where a summary that drifted from
-its evidence was a real liability, and a schema library ([zod-ai-tool](https://www.npmjs.com/package/zod-ai-tool))
-for the tool-definition boundary.
+evidence plugins come from production work: an enterprise design system used
+by 1000+ engineers, an AI feedback platform where summaries had to remain tied
+to evidence, and a schema library
+([zod-ai-tool](https://www.npmjs.com/package/zod-ai-tool)) for the tool-definition
+boundary.
 
-MIT licensed. Contributions and issues welcome.
+MIT licensed.

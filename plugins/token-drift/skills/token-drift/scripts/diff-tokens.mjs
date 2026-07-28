@@ -22,13 +22,14 @@ import {
 
 const SEVERITY = new Map([
   ["CYCLE", 0],
-  ["TYPE_MISMATCH", 1],
-  ["VALUE_DRIFT", 2],
-  ["MISSING_IN_CODE", 3],
-  ["ORPHAN_IN_CODE", 4],
+  ["UNRESOLVED_REF", 1],
+  ["TYPE_MISMATCH", 2],
+  ["VALUE_DRIFT", 3],
+  ["MISSING_IN_CODE", 4],
+  ["ORPHAN_IN_CODE", 5],
 ]);
 
-const FAILING = new Set(["CYCLE", "TYPE_MISMATCH", "VALUE_DRIFT"]);
+const FAILING = new Set(["CYCLE", "UNRESOLVED_REF", "TYPE_MISMATCH", "VALUE_DRIFT"]);
 
 function usage() {
   return "usage: diff-tokens.mjs <design-source> <code-source> [--json] [--strict] [--format dtcg|css|auto]\n";
@@ -89,11 +90,11 @@ export function diffTokenMaps(designInput, codeInput) {
     ...designResolved.findings.map((f) => ({ ...f, side: "design" })),
     ...codeResolved.findings.map((f) => ({ ...f, side: "code" })),
   ];
-  const cycleKeys = new Set(results.filter((r) => r.verdict === "CYCLE").map((r) => r.key));
+  const invalidKeys = new Set(results.filter((r) => r.verdict === "CYCLE" || r.verdict === "UNRESOLVED_REF").map((r) => r.key));
   const keys = new Set([...design.keys(), ...code.keys()]);
 
   for (const key of keys) {
-    if (cycleKeys.has(key) || shouldSkip(key, design, code)) continue;
+    if (invalidKeys.has(key) || shouldSkip(key, design, code)) continue;
     const d = design.get(key);
     const c = code.get(key);
 
@@ -153,6 +154,8 @@ export function formatReport(results, designFile, codeFile, strict = false) {
       out.push(`  ${r.key}`);
       if (r.side) out.push(`    side: ${r.side}`);
       if (r.cycle) out.push(`    cycle: ${r.cycle.join(" -> ")}`);
+      if (r.reference) out.push(`    ref:    ${r.reference}`);
+      if (r.reason) out.push(`    reason: ${r.reason}`);
       if (r.designValue !== undefined) out.push(`    design: ${r.designValue}`);
       if (r.codeValue !== undefined) out.push(`    code:   ${r.codeValue}`);
       if (r.designType || r.codeType) {

@@ -1,10 +1,15 @@
 # Compatibility
 
-Every plugin's knowledge (the `SKILL.md` files and the scripts they call) is a
-portable [Agent Skill](https://agentskills.io): plain Markdown plus
-zero-dependency Node scripts, no Claude Code APIs. Copy any `skills/<name>/`
-directory into another tool's skills location and the knowledge and the
-checker both work, because [32+ tools read the same SKILL.md format](https://code.claude.com/docs/en/skills):
+dibble is the engineering contract that travels between coding agents. Skills
+carry working context across hosts; scripts and hooks keep deterministic rules
+consistent across the agent, local CLI, and CI.
+
+Every plugin's knowledge is a portable
+[Agent Skill](https://agentskills.io): plain Markdown plus zero-dependency Node
+scripts. CLI entry points are host-neutral. Hook entry points intentionally
+read and write the lifecycle APIs supported by Claude Code and Codex. Copy any
+`skills/<name>/` directory into another tool's skills location and its
+knowledge and direct CLI still work, because [32+ tools read the same SKILL.md format](https://code.claude.com/docs/en/skills):
 Codex CLI, Cursor, Gemini CLI, and others.
 
 **What now travels through Codex** is a separate Codex marketplace sidecar:
@@ -23,7 +28,7 @@ hash. tokenlock's matcher covers `apply_patch` alongside Claude's `Write` and
 remain Claude-only; Cursor and Gemini CLI run the skills and CLIs but not the
 bundled hook layer.
 
-| Plugin | Skill (portable) | Codex plugin | CLI script | Auto hook (Claude + Codex) | Claude command | CI usable |
+| Plugin | Skill (portable) | Codex plugin | CLI script | Bundled hook (review required) | Claude command | CI usable |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: |
 | [tokenlock](../plugins/tokenlock) | ✅ | ✅ | ✅ | ✅ PostToolUse | n/a | ✅ |
 | [token-drift](../plugins/token-drift) | ✅ | ✅ | ✅ | n/a | n/a | ✅ |
@@ -46,9 +51,10 @@ path under `./plugins/<name>`.
 
 **On Codex:** enable tokenlock or install-gate, open `/hooks`, review the bundled
 command, and trust it before expecting enforcement. Codex records trust against
-the definition hash, so an updated hook requires review again. The payload and
-output contracts are covered by repository tests. All 11 plugins have also
-passed the current Codex desktop CLI's live marketplace parser and installer;
+the definition hash, so an updated hook requires review again. Repository
+fixtures cover the payload and output shapes in the documented Codex contract;
+an interactive end-to-end hook firing remains an explicit release check. All
+11 plugins have also passed the current Codex desktop CLI's live marketplace parser and installer;
 the remaining interactive hook and Plugins Directory checks are tracked in
 [HANDOFF.md](../HANDOFF.md).
 
@@ -65,6 +71,6 @@ see each plugin's README for the exact command.
 
 **Design-verify is a partial exception:** the responsive-smell linter
 (`responsive-smells.mjs`) is a portable static check. The screenshot-loop
-half of the workflow assumes a browser-preview tool exists in the
-environment (Claude Code's `preview_*` tools, or an equivalent), so that part
-is inherently host-dependent regardless of vendor.
+half of the workflow needs a browser surface in the host, such as Codex browser
+or computer tools, Claude Code's Chrome or Desktop integration, or a browser
+MCP such as Playwright. That part is host-dependent regardless of vendor.

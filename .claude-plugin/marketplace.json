@@ -5,7 +5,7 @@
     "email": "dibbleconnor@gmail.com"
   },
   "metadata": {
-    "description": "Guardrails and craft for coding agents. Deterministic hooks where judgment isn't needed, sharp skills where it is.",
+    "description": "The engineering context you carry between coding agents: portable guardrails, review loops, and working methods for Claude and GPT.",
     "pluginRoot": "./plugins"
   },
   "plugins": [

@@ -20,8 +20,10 @@ you resolve a flag correctly instead of reflexively overriding it.
   (`ai-utils-helper`, `openai-sdk-client`). An attacker registers the name a
   model is likely to hallucinate, then waits. Flagged for verification because
   the hook can't check existence offline; you can, in one lookup.
-- **Install-time execution.** `--allow-scripts`, `--unsafe-perm`, `sudo pip`.
-  Blocked. These hand every dependency a chance to run code at install.
+- **Explicit script approval.** pnpm `--allow-scripts` is blocked until the
+  named dependency and its lifecycle script have been inspected.
+- **Root Python installation.** `sudo pip` is blocked because it writes to the
+  system interpreter as root. Use a virtual environment.
 - **Non-registry sources.** Git URLs, tarballs, `file:` specs. Questioned, not
   blocked: sometimes legitimate, but they skip the registry's takedown and
   scanning, so they deserve a conscious yes.
@@ -65,9 +67,12 @@ lint on install commands in scripts or Dockerfiles.
 ## What it does not do
 
 It is offline and heuristic. It does not query the registry, so it can't see
-download counts, package age, or a known-CVE advisory, and it won't catch a
-compromised version of a legitimately-named popular package. Treat it as the
-name-and-shape layer. Pair it with a lockfile, `npm audit`/`pip-audit` in CI,
-and reading the source of anything unfamiliar before you depend on it. The
-bundled popularity lists are a typosquat magnet set, not the whole registry;
-an exotic-but-real package may draw a VERIFY, which is working as intended.
+download counts, package age, known advisories, or package lifecycle metadata.
+npm and pnpm may run lifecycle scripts by default without a special flag. Use
+`--ignore-scripts` while evaluating an unfamiliar package, then inspect and
+allow only the scripts you trust. The gate also won't catch a compromised
+version of a legitimately named popular package. Treat it as the name-and-shape
+layer. Pair it with a lockfile, `npm audit`/`pip-audit` in CI, and reading the
+source of anything unfamiliar before you depend on it. The bundled lists cover
+123 npm names, 83 Python names, and 59 Cargo names. They are a typosquat magnet
+set, not the whole registry.

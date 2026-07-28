@@ -101,6 +101,48 @@ test("a DTCG JSON Pointer whole-token reference resolves before comparison", () 
   assert.equal(r.status, 0, r.stdout + r.stderr);
 });
 
+test("a DTCG JSON Pointer to a whole token resolves its value instead of serializing metadata", () => {
+  const source = JSON.stringify({
+    color: {
+      brand: { 500: { $type: "color", $value: "#ff0000" } },
+      action: { $type: "color", $ref: "#/color/brand/500" },
+    },
+  });
+  const css = ":root { --color-brand-500: #ff0000; --color-action: #ff0000; }";
+  const r = run(source, css);
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+});
+
+test("invalid DTCG references fail as UNRESOLVED_REF instead of value drift", () => {
+  for (const token of [
+    { $type: "color", $ref: "#/color/nope/500/$value" },
+    { $type: "color", $ref: "color.brand.500" },
+    { $type: "color", $value: "#ff0000", $ref: "#/color/brand/500/$value" },
+  ]) {
+    const source = JSON.stringify({
+      color: {
+        brand: { 500: { $type: "color", $value: "#ff0000" } },
+        broken: token,
+      },
+    });
+    const css = ":root { --color-brand-500: #ff0000; --color-broken: #ff0000; }";
+    const r = run(source, css);
+    assert.equal(r.status, 1, r.stdout + r.stderr);
+    assert.match(r.stdout, /UNRESOLVED_REF/);
+    assert.match(r.stdout, /color\.broken/);
+    assert.doesNotMatch(r.stdout, /VALUE_DRIFT/);
+  }
+});
+
+test("a missing brace-style alias target fails as UNRESOLVED_REF", () => {
+  const source = JSON.stringify({ color: { action: { $type: "color", $value: "{color.missing}" } } });
+  const css = ":root { --color-action: #ff0000; }";
+  const r = run(source, css);
+  assert.equal(r.status, 1, r.stdout + r.stderr);
+  assert.match(r.stdout, /UNRESOLVED_REF/);
+  assert.match(r.stdout, /alias target does not exist/);
+});
+
 test("a DTCG JSON Pointer property reference resolves RFC 6901 escapes", () => {
   const source = JSON.stringify({
     "brand/color": { base: { $type: "color", $value: { hex: "#1d4ed8" }, $extensions: { "token-drift": "ignore" } } },

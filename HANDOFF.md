@@ -2,7 +2,7 @@
 
 State file for work that is known, scoped, and not yet done. Public repo, so
 this is engineering follow-ups only; go-to-market lives in the gitignored
-`LAUNCH.md`. Current release: `dibble@1.1.0` (11 plugins, Claude Code + Codex).
+`LAUNCH.md`. Current release: `dibble@1.2.0` (11 plugins, Claude Code + Codex).
 
 ## Needs live verification (can't confirm from the dev box)
 
@@ -74,6 +74,6 @@ squishier than the others. Write and freeze the fixture format (the run-summary
 pnpm validate      # Claude + Codex marketplace/plugin structure
 pnpm lint:prose    # sloplint --strict on root/plugin READMEs + SKILL.md
 pnpm lint:readmes  # root/plugin READMEs pass the readme auditor
-pnpm test          # all plugin test suites (127 tests)
+pnpm test          # all plugin test suites (148 tests)
 pnpm test:coverage # same suite with a 95% line-coverage floor
 ```

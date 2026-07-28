@@ -22,7 +22,11 @@ const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 const EXACT_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
 const SECRET = /\b(?:sk-[A-Za-z0-9_-]{16,}|sk-ant-[A-Za-z0-9_-]{16,}|ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{10,})\b/;
-const REMOTE_EXEC = /\b(?:curl|wget)\b[^|;&]*(?:\||;|&&)[^|;&]*\b(?:sh|bash|zsh|node|python3?)\b/;
+const REMOTE_EXEC = [
+  /\b(?:curl|wget)\b[^|;&]*(?:\||;|&&)[^|;&]*\b(?:sh|bash|zsh|node|python3?)\b/,
+  /\b(?:sh|bash|zsh|node|python3?)\b[^\n]*<\(\s*(?:curl|wget)\b/,
+  /\beval\s+["']?\$\(\s*(?:curl|wget)\b/,
+];
 const MUTABLE_REF = /^(?:main|master|head|latest|next|dev|develop)$/i;
 
 const RESERVED_CLAUDE_MARKETPLACES = new Set([
@@ -70,6 +74,25 @@ function relDisplay(root, path) {
 function inside(base, path) {
   const rel = relative(resolve(base), resolve(path));
   return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+}
+
+function downloadsAndExecutesRemote(command) {
+  return REMOTE_EXEC.some((pattern) => pattern.test(command));
+}
+
+function hasUnclassifiedRemoteExecutionShape(command) {
+  return /\b(?:curl|wget)\b/.test(command)
+    && /\b(?:sh|bash|zsh|node|python3?|eval)\b/.test(command)
+    && !downloadsAndExecutesRemote(command);
+}
+
+function isLoopbackHttp(url) {
+  return /^http:\/\/(?:localhost|127\.0\.0\.1|\[?::1\]?)(?::|\/|$)/i.test(url);
+}
+
+function temporaryAbsolutePaths(command) {
+  const matches = command.match(/(?:^|\s|["'])(\/(?:tmp|private\/tmp|var\/tmp)\/[^\s"']+)/g) ?? [];
+  return matches.map((match) => match.trim().replace(/^["']|["']$/g, ""));
 }
 
 function parseFrontmatter(text) {
@@ -395,18 +418,23 @@ export function inspectRepository(inputRoot) {
             if (!nonEmptyString(hook.command)) error(host, plugin.name, sourcePath, `${event} command hook is missing command`, "set the executable command");
             const full = [hook.command, ...(Array.isArray(hook.args) ? hook.args : [])].filter(nonEmptyString).join(" ");
             plugin.authority.execution.push({ host, kind: "hook", event, command: full });
-            if (REMOTE_EXEC.test(full)) error(host, plugin.name, sourcePath, `${event} hook downloads and executes remote code`, "vendor and review the script inside the plugin");
+            if (downloadsAndExecutesRemote(full)) error(host, plugin.name, sourcePath, `${event} hook downloads and executes remote code`, "vendor and review the script inside the plugin");
+            else if (hasUnclassifiedRemoteExecutionShape(full)) error(host, plugin.name, sourcePath, `${event} hook combines a remote fetch and interpreter in an unclassified shell shape`, "rewrite the command for review or vendor the script inside the plugin");
+            for (const outside of temporaryAbsolutePaths(full)) {
+              error(host, plugin.name, sourcePath, `${event} hook executes a temporary path outside the plugin: ${outside}`, "bundle the executable inside the plugin and reference it through the plugin root");
+            }
             if (SECRET.test(full)) error(host, plugin.name, sourcePath, `${event} hook contains a credential-shaped value`, "load secrets from the host environment instead");
             const refs = [...full.matchAll(/\$\{(CLAUDE_PLUGIN_ROOT|PLUGIN_ROOT)\}\/([^\s"']+)/g)];
             for (const match of refs) {
               const target = resolve(plugin.base, match[2]);
-              if (!inside(plugin.base, target) || !existsSync(target)) error(host, plugin.name, sourcePath, `${event} hook references missing ${match[2]}`, "bundle the referenced script or fix the path");
+              if (!inside(plugin.base, target)) error(host, plugin.name, sourcePath, `${event} hook path escapes the plugin root: ${match[2]}`, "keep hook scripts inside the plugin root");
+              else if (!existsSync(target)) error(host, plugin.name, sourcePath, `${event} hook references missing ${match[2]}`, "bundle the referenced script or fix the path");
               if (host === "claude" && match[1] === "PLUGIN_ROOT") warn(host, plugin.name, sourcePath, "Claude hook uses PLUGIN_ROOT instead of CLAUDE_PLUGIN_ROOT", "use the host-documented plugin root variable");
             }
             if (hook.timeout === undefined) warn(host, plugin.name, sourcePath, `${event} command hook has no timeout`, "set a timeout so a hung hook cannot stall the agent");
           } else if (type === "http") {
             plugin.authority.network.push({ host, kind: "hook", event, target: hook.url ?? "unknown" });
-            if (!/^https:\/\//.test(hook.url ?? "")) error(host, plugin.name, sourcePath, `${event} HTTP hook must use HTTPS`, "use a TLS-protected endpoint");
+            if (!/^https:\/\//.test(hook.url ?? "") && !isLoopbackHttp(hook.url ?? "")) error(host, plugin.name, sourcePath, `${event} HTTP hook must use HTTPS`, "use a TLS-protected endpoint for non-loopback hosts");
           } else if (type === "mcp_tool") {
             plugin.authority.network.push({ host, kind: "mcp-hook", event, target: hook.tool ?? "unknown" });
           }
@@ -451,14 +479,15 @@ export function inspectRepository(inputRoot) {
       plugin.components.mcpServers.push({ host, name, detail });
       if (server.url) {
         plugin.authority.network.push({ host, kind: "mcp", name, target: server.url });
-        if (!/^https:\/\//.test(server.url)) error(host, plugin.name, sourcePath, `MCP server '${name}' uses a non-HTTPS URL`, "use HTTPS for remote MCP transport");
+        if (!/^https:\/\//.test(server.url) && !isLoopbackHttp(server.url)) error(host, plugin.name, sourcePath, `MCP server '${name}' uses a non-HTTPS URL`, "use HTTPS for remote MCP transport; loopback HTTP is allowed for local development");
       }
       if (server.command) {
         const command = [server.command, ...(Array.isArray(server.args) ? server.args : [])].join(" ");
         plugin.authority.execution.push({ host, kind: "mcp", name, command });
         if (/\bnpx\b/.test(command) && !/@\d+\.\d+\.\d+/.test(command)) warn(host, plugin.name, sourcePath, `MCP server '${name}' runs an unpinned npx package`, "pin an exact package version");
         if (/\buvx\b/.test(command) && !/==\d+\.\d+\.\d+/.test(command)) warn(host, plugin.name, sourcePath, `MCP server '${name}' runs an unpinned uvx package`, "pin an exact package version");
-        if (REMOTE_EXEC.test(command)) error(host, plugin.name, sourcePath, `MCP server '${name}' downloads and executes remote code`, "bundle or pin a reviewed executable");
+        if (downloadsAndExecutesRemote(command)) error(host, plugin.name, sourcePath, `MCP server '${name}' downloads and executes remote code`, "bundle or pin a reviewed executable");
+        else if (hasUnclassifiedRemoteExecutionShape(command)) error(host, plugin.name, sourcePath, `MCP server '${name}' combines a remote fetch and interpreter in an unclassified shell shape`, "rewrite the command for review or bundle a reviewed executable");
       }
       const envText = JSON.stringify(server.env ?? {});
       if (SECRET.test(envText)) error(host, plugin.name, sourcePath, `MCP server '${name}' embeds a credential`, "reference an environment variable instead of storing the secret");
@@ -759,8 +788,9 @@ export function inspectRepository(inputRoot) {
           if (!evaluation.categories.includes(item?.category)) {
             error("shared", suite.plugin, evalPath, `${key} has unknown evaluation category '${item?.category}'`, `use ${evaluation.categories.join(", ")}`);
           } else categories.add(item.category);
-          if (!nonEmptyString(item?.prompt) || !nonEmptyString(item?.expected)) {
-            error("shared", suite.plugin, evalPath, `${key} evaluation cases need non-empty prompt and expected strings`, "state both the request and observable success criterion");
+          const expected = Array.isArray(item?.expected) ? item.expected : [item?.expected];
+          if (!nonEmptyString(item?.prompt) || !expected.length || expected.some((criterion) => !nonEmptyString(criterion))) {
+            error("shared", suite.plugin, evalPath, `${key} evaluation cases need a non-empty prompt and observable expected criteria`, "state the request and split compound outcomes into pass/fail strings");
           }
           evaluation.cases++;
         }
@@ -780,6 +810,7 @@ export function inspectRepository(inputRoot) {
 }
 
 export function formatReport(result) {
+  const uniqueBy = (items, key) => [...new Map(items.map((item) => [key(item), item])).values()];
   const out = [];
   for (const finding of result.findings) {
     const label = finding.severity === "error" ? "FAIL" : "warn";
@@ -792,9 +823,13 @@ export function formatReport(result) {
   out.push("Authority inventory");
   for (const plugin of result.plugins) {
     const c = plugin.components;
+    const hookDefinitions = uniqueBy(c.hooks, (item) => `${item.event}\0${item.type}\0${item.detail}`);
+    const executions = uniqueBy(plugin.authority.execution, (item) => `${item.kind}\0${item.event ?? item.name ?? ""}\0${item.command}`);
+    const networks = uniqueBy(plugin.authority.network, (item) => `${item.kind}\0${item.name ?? item.event ?? ""}\0${item.target}`);
+    const installs = uniqueBy(plugin.authority.install, (item) => item.source);
     const componentParts = [
       c.skills.length && `${c.skills.length} skill${c.skills.length === 1 ? "" : "s"}`,
-      c.hooks.length && `${c.hooks.length} hook${c.hooks.length === 1 ? "" : "s"}`,
+      hookDefinitions.length && `${hookDefinitions.length} hook${hookDefinitions.length === 1 ? "" : "s"}`,
       c.mcpServers.length && `${c.mcpServers.length} MCP server${c.mcpServers.length === 1 ? "" : "s"}`,
       c.apps.length && `${c.apps.length} app${c.apps.length === 1 ? "" : "s"}`,
       c.agents.length && `${c.agents.length} agent${c.agents.length === 1 ? "" : "s"}`,
@@ -807,9 +842,9 @@ export function formatReport(result) {
     ].filter(Boolean);
     out.push(`  ${plugin.name} [${plugin.hosts.join(", ") || "external"}]`);
     out.push(`    loads: ${componentParts.join(", ") || "metadata only"}`);
-    out.push(`    executes: ${plugin.authority.execution.length ? plugin.authority.execution.map((item) => `${item.kind}:${item.event ?? item.name ?? item.command}`).join(", ") : "nothing automatically"}`);
-    out.push(`    connects: ${plugin.authority.network.length ? plugin.authority.network.map((item) => `${item.kind}:${item.target}`).join(", ") : "no declared network service"}`);
-    out.push(`    installs: ${plugin.authority.install.length ? plugin.authority.install.map((item) => item.source).join(", ") : "no declared dependency source"}`);
+    out.push(`    executes: ${executions.length ? executions.map((item) => `${item.kind}:${item.event ?? item.name ?? item.command}`).join(", ") : "nothing automatically"}`);
+    out.push(`    connects: ${networks.length ? networks.map((item) => `${item.kind}:${item.target}`).join(", ") : "no declared network service"}`);
+    out.push(`    installs: ${installs.length ? installs.map((item) => item.source).join(", ") : "no declared dependency source"}`);
   }
   out.push("");
   if (result.evaluation.cases) {

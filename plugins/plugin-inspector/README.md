@@ -13,8 +13,8 @@ $ npx dibble plugin-inspector .
 
 Authority inventory
   install-gate [claude, openai]
-    loads: 1 skill, 2 hooks
-    executes: hook:PreToolUse, hook:PreToolUse
+    loads: 1 skill, 1 hook
+    executes: hook:PreToolUse
     connects: no declared network service
     installs: local:./install-gate, local:./plugins/install-gate
 
@@ -57,6 +57,9 @@ checks:
   executables, settings, and install-surface assets
 - inline credentials, non-HTTPS endpoints, remote-download execution, mutable
   Git refs, package ranges, unpinned `npx`/`uvx`, and hooks without timeouts
+
+Shared definitions are counted once in the human report even when both hosts
+load them. JSON output retains host-specific entries for automation.
 
 Unknown fields warn rather than fail. Plugin schemas move; a validator that
 rejects every new host field becomes a source of breakage itself.

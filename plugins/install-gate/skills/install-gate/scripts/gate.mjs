@@ -22,7 +22,7 @@
  */
 
 import { readFileSync, existsSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -57,9 +57,42 @@ const INSTALL_VERBS = {
 };
 const ECOSYSTEM = { npm: "npm", pnpm: "npm", yarn: "npm", bun: "npm", pip: "pip", pip3: "pip", cargo: "cargo" };
 
-// Split a shell line on connectors so `a && npm i x` is seen.
+// Split shell command lists on connectors, newlines, and grouping parentheses,
+// but never split inside quotes. This is intentionally a recognizer for install
+// commands, not a shell interpreter.
 function splitCommands(line) {
-  return line.split(/&&|\|\||;|\|/).map((s) => s.trim()).filter(Boolean);
+  const commands = [];
+  let current = "";
+  let quote = null;
+  let escaped = false;
+  const flush = () => {
+    const value = current.trim();
+    if (value) commands.push(value);
+    current = "";
+  };
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === "\\" && quote !== "'" && !escaped) {
+      escaped = true;
+      current += char;
+      continue;
+    }
+    if (char === quote && !escaped) quote = null;
+    else if (!quote && (char === '"' || char === "'")) quote = char;
+    if (!quote) {
+      const pair = line.slice(i, i + 2);
+      if (pair === "&&" || pair === "||") { flush(); i++; escaped = false; continue; }
+      if (char === ";" || char === "|" || char === "\n" || char === "\r" || char === "(" || char === ")") {
+        flush();
+        escaped = false;
+        continue;
+      }
+    }
+    current += char;
+    escaped = false;
+  }
+  flush();
+  return commands;
 }
 
 function tokenize(cmd) {
@@ -87,12 +120,36 @@ function parseInstall(cmd) {
   const tokens = tokenize(cmd);
   let idx = 0;
   let sudo = false;
-  if (tokens[idx] === "sudo") { sudo = true; idx++; }
+  const assignment = (token) => /^[A-Za-z_][A-Za-z0-9_]*=/.test(token ?? "");
+  while (assignment(tokens[idx])) idx++;
+  if (basename(tokens[idx] ?? "") === "env") {
+    idx++;
+    while (tokens[idx]?.startsWith("-") || assignment(tokens[idx])) {
+      const option = tokens[idx++];
+      if ((option === "-u" || option === "--unset") && !option.includes("=")) idx++;
+    }
+  }
+  if (basename(tokens[idx] ?? "") === "sudo") {
+    sudo = true;
+    idx++;
+    const takesValue = new Set(["-u", "--user", "-g", "--group", "-h", "--host", "-p", "--prompt", "-C", "--close-from"]);
+    while (tokens[idx]?.startsWith("-") || assignment(tokens[idx])) {
+      const option = tokens[idx++];
+      if (takesValue.has(option) && !option.includes("=")) idx++;
+    }
+  }
+  if (basename(tokens[idx] ?? "") === "command") {
+    idx++;
+    while (tokens[idx]?.startsWith("-")) idx++;
+  }
+
+  const executable = basename(tokens[idx] ?? "");
 
   // `python -m pip install X` / `python3 -m pip install X` — a common
   // alternative to invoking `pip` directly, especially in venvs and CI.
-  if (tokens[idx] === "python" || tokens[idx] === "python3") {
-    if (tokens[idx + 1] === "-m" && (tokens[idx + 2] === "pip" || tokens[idx + 2] === "pip3")) {
+  if (executable === "python" || executable === "python3") {
+    const pipExecutable = basename(tokens[idx + 2] ?? "");
+    if (tokens[idx + 1] === "-m" && (pipExecutable === "pip" || pipExecutable === "pip3")) {
       const parsed = parseVerbSpecs(tokens.slice(idx + 3), INSTALL_VERBS.pip);
       if (!parsed) return null;
       return { manager: "pip", ecosystem: "pip", ...parsed, sudo, raw: cmd };
@@ -100,7 +157,7 @@ function parseInstall(cmd) {
     return null; // `python script.py`, `python -c ...`, etc. — not a package install
   }
 
-  const mgr = tokens[idx];
+  const mgr = executable;
   if (!mgr || !INSTALL_VERBS[mgr]) return null;
   const parsed = parseVerbSpecs(tokens.slice(idx + 1), INSTALL_VERBS[mgr]);
   if (!parsed) return null;
@@ -200,8 +257,8 @@ function analyzeShape(install) {
   const notes = [];
   const flagStr = install.flags.join(" ");
 
-  if (/--allow-scripts|--foreground-scripts|--unsafe-perm/.test(flagStr)) {
-    notes.push({ level: "block", why: `${install.manager} is told to run install-time lifecycle scripts (${flagStr.match(/--[\w-]+/)?.[0]}); that executes arbitrary code from every dep before you've run anything` });
+  if (/--allow-scripts/.test(flagStr)) {
+    notes.push({ level: "block", why: `${install.manager} explicitly allows selected dependency lifecycle scripts (--allow-scripts); inspect the allowed packages and their scripts before enabling them` });
   }
   if (install.sudo && install.ecosystem === "pip") {
     notes.push({ level: "block", why: "sudo pip install writes into system Python as root; use a virtualenv, and never run install-time code as root" });
@@ -219,7 +276,15 @@ function evaluate(command) {
   const results = [];
   for (const sub of splitCommands(command)) {
     const install = parseInstall(sub);
-    if (!install) continue;
+    if (!install) {
+      const tokens = tokenize(sub).map((token) => basename(token));
+      const resemblesInstall = tokens.some((token, index) => INSTALL_VERBS[token]
+        && tokens.slice(index + 1).some((candidate) => INSTALL_VERBS[token].includes(candidate)));
+      if (resemblesInstall) {
+        results.push({ command: sub, notes: [{ level: "verify", why: "this looks like a package install, but install-gate could not safely model the shell wrapper; rewrite it as a direct package-manager command before proceeding" }] });
+      }
+      continue;
+    }
     const notes = [...analyzeShape(install)];
     for (const spec of install.specs) {
       const { name } = specName(spec, install.ecosystem);
@@ -263,7 +328,9 @@ function main() {
     if (!results.length) process.exit(0);
 
     const reason = render(results);
-    const codex = typeof payload?.turn_id === "string";
+    // Both fields are documented Codex-specific hook extensions. Using either
+    // preserves VERIFY feedback if one optional identifier is unavailable.
+    const codex = typeof payload?.turn_id === "string" || typeof payload?.model === "string";
     const blocked = hasBlock(results);
     const hookSpecificOutput = {
       hookEventName: "PreToolUse",

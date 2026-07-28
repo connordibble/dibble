@@ -1,7 +1,7 @@
 {
   "name": "dibble",
   "version": "1.2.0",
-  "description": "Guardrails and craft for coding agents: design-token enforcement, supply-chain gates, config auditing, evidence-linked writing. Claude Code and Codex plugin metadata plus the same checkers as npx CLIs.",
+  "description": "Portable guardrails, review loops, and engineering skills that keep work consistent across Claude and GPT, with the same checks available through hooks, CLI, and CI.",
   "license": "MIT",
   "author": {
     "name": "Connor Dibble",
@@ -64,7 +64,8 @@
   },
   "scripts": {
     "test": "node --test plugins/*/tests/*.test.mjs",
-    "test:coverage": "node --test --experimental-test-coverage --test-coverage-lines=95 plugins/*/tests/*.test.mjs",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-lines=95 plugins/*/tests/*.test.mjs && node scripts/check-security-coverage.mjs",
+    "test:security-coverage": "node scripts/check-security-coverage.mjs",
     "validate": "node plugins/plugin-inspector/skills/plugin-inspector/scripts/inspect.mjs .",
     "lint:prose": "node plugins/no-slop/skills/writing/scripts/sloplint.mjs --strict README.md plugins/*/README.md plugins/*/skills/*/SKILL.md",
     "lint:readmes": "node scripts/audit-readmes.mjs",

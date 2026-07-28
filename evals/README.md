@@ -9,6 +9,7 @@ or perform an unsupported action.
 `plugin-inspector` validates coverage and fails when a skill is missing a case.
 The corpus is intentionally model- and host-neutral: run the prompts in fresh
 Codex, ChatGPT, or Claude Code conversations when qualifying a host release,
-then judge both whether the skill activated and whether the observable
-criterion in `expected` was met. Static coverage is not presented as a model
-quality score.
+then judge both whether the skill activated and whether every observable
+criterion in `expected` was met. `expected` may be one string or an array of
+atomic pass/fail strings when a case has several outcomes. Static coverage is
+not presented as a model quality score.

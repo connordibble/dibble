@@ -45,7 +45,11 @@ function isWorldWritable(path) {
 // Check 1: hook commands in settings files
 // ---------------------------------------------------------------------------
 
-const REMOTE_EXEC = /\b(curl|wget)\b[^|;&]*(\||;|&&)[^|;&]*\b(sh|bash|zsh|node|python3?)\b/;
+const REMOTE_EXEC = [
+  /\b(?:curl|wget)\b[^|;&]*(?:\||;|&&)[^|;&]*\b(?:sh|bash|zsh|node|python3?)\b/,
+  /\b(?:sh|bash|zsh|node|python3?)\b[^\n]*<\(\s*(?:curl|wget)\b/,
+  /\beval\s+["']?\$\(\s*(?:curl|wget)\b/,
+];
 const OBFUSCATION = /\bbase64\b.*(-d|--decode|-D)|\batob\s*\(/;
 const TMP_EXEC = /(^|[\s"'=])\/(?:var\/)?tmp\//;
 const INLINE_EVAL = /\b(node\s+-e|sh\s+-c|bash\s+-c|eval)\b/;
@@ -64,9 +68,13 @@ function fullHookCommand(h) {
 
 function auditHookCommand(cmd, sourceFile, event) {
   const where = `${sourceFile} (${event} hook)`;
-  if (REMOTE_EXEC.test(cmd)) {
-    add("critical", where, `hook pipes a network download into an interpreter: ${trim(cmd)}`,
+  const remoteExec = REMOTE_EXEC.some((pattern) => pattern.test(cmd));
+  if (remoteExec) {
+    add("critical", where, `hook downloads and executes remote code: ${trim(cmd)}`,
       "vendor the script locally, read it, then reference the local copy");
+  } else if (/\b(?:curl|wget)\b/.test(cmd) && /\b(?:sh|bash|zsh|node|python3?|eval)\b/.test(cmd)) {
+    add("warn", where, `hook combines a network fetch and interpreter in an unrecognized shell shape: ${trim(cmd)}`,
+      "review this command manually or rewrite it so the audit can determine whether downloaded code executes");
   }
   if (OBFUSCATION.test(cmd)) {
     add("critical", where, `hook decodes an obfuscated payload: ${trim(cmd)}`,
@@ -131,21 +139,117 @@ function auditSettingsFile(path, label) {
   }
 }
 
-// Codex uses TOML for permissions and MCP servers. This intentionally parses
-// only the small, security-relevant subset we inspect; it is not a general
-// TOML implementation and never rewrites the file.
+// Codex uses TOML for permissions and MCP servers. This is a deliberately
+// small reader for the security-relevant shapes below, not a general TOML
+// implementation. The important contract is fail-loud: any assignment or
+// table we cannot model becomes an informational finding instead of a clean
+// audit result.
+function stripTomlComment(raw) {
+  let quote = null;
+  let escaped = false;
+  for (let i = 0; i < raw.length; i++) {
+    const char = raw[i];
+    if (quote === '"' && char === "\\" && !escaped) { escaped = true; continue; }
+    if (char === quote && !escaped) quote = null;
+    else if (!quote && (char === '"' || char === "'")) quote = char;
+    else if (!quote && char === "#") return raw.slice(0, i).trimEnd();
+    escaped = false;
+  }
+  return raw;
+}
+
+function splitToml(raw, delimiter) {
+  const parts = [];
+  let start = 0;
+  let quote = null;
+  let escaped = false;
+  let square = 0;
+  let curly = 0;
+  for (let i = 0; i < raw.length; i++) {
+    const char = raw[i];
+    if (quote === '"' && char === "\\" && !escaped) { escaped = true; continue; }
+    if (char === quote && !escaped) quote = null;
+    else if (!quote && (char === '"' || char === "'")) quote = char;
+    else if (!quote) {
+      if (char === "[") square++;
+      else if (char === "]") square--;
+      else if (char === "{") curly++;
+      else if (char === "}") curly--;
+      else if (char === delimiter && square === 0 && curly === 0) {
+        parts.push(raw.slice(start, i));
+        start = i + 1;
+      }
+    }
+    escaped = false;
+  }
+  parts.push(raw.slice(start));
+  return { parts, balanced: !quote && square === 0 && curly === 0 };
+}
+
+function tomlPath(raw) {
+  const split = splitToml(raw.trim(), ".");
+  if (!split.balanced) return null;
+  const parts = [];
+  for (const item of split.parts) {
+    const key = item.trim();
+    if (/^[A-Za-z0-9_-]+$/.test(key)) parts.push(key);
+    else if (key.startsWith('"') && key.endsWith('"')) {
+      try { parts.push(JSON.parse(key)); } catch { return null; }
+    } else if (key.startsWith("'") && key.endsWith("'") && !key.slice(1, -1).includes("'")) {
+      parts.push(key.slice(1, -1));
+    } else return null;
+  }
+  return parts.length ? parts : null;
+}
+
+function splitAssignment(raw) {
+  const split = splitToml(raw, "=");
+  if (!split.balanced || split.parts.length < 2) return null;
+  return [split.parts[0], split.parts.slice(1).join("=")];
+}
+
 function tomlValue(raw) {
-  const value = raw.trim().replace(/\s+#.*$/, "");
-  if (value.startsWith('"')) {
-    try { return JSON.parse(value); } catch { return value.slice(1, -1); }
+  const value = stripTomlComment(raw).trim();
+  if (!value) return { ok: false };
+  if (value.startsWith('"') && value.endsWith('"')) {
+    try { return { ok: true, value: JSON.parse(value) }; } catch { return { ok: false }; }
+  }
+  if (value.startsWith("'") && value.endsWith("'") && !value.slice(1, -1).includes("'")) {
+    return { ok: true, value: value.slice(1, -1) };
   }
   if (value.startsWith("[") && value.endsWith("]")) {
-    const items = value.slice(1, -1).match(/"(?:\\.|[^"\\])*"|'[^']*'|[^,]+/g) ?? [];
-    return items.map((item) => tomlValue(item));
+    const split = splitToml(value.slice(1, -1), ",");
+    if (!split.balanced) return { ok: false };
+    const items = [];
+    for (const item of split.parts) {
+      if (!item.trim()) continue;
+      const parsed = tomlValue(item);
+      if (!parsed.ok) return { ok: false };
+      items.push(parsed.value);
+    }
+    return { ok: true, value: items };
   }
-  if (value === "true") return true;
-  if (value === "false") return false;
-  return value;
+  if (value.startsWith("{") && value.endsWith("}")) {
+    const split = splitToml(value.slice(1, -1), ",");
+    if (!split.balanced) return { ok: false };
+    const table = {};
+    for (const item of split.parts) {
+      if (!item.trim()) continue;
+      const assignment = splitAssignment(item);
+      const path = assignment && tomlPath(assignment[0]);
+      const parsed = assignment && tomlValue(assignment[1]);
+      if (!path || !parsed?.ok || path.length !== 1) return { ok: false };
+      table[path[0]] = parsed.value;
+    }
+    return { ok: true, value: table };
+  }
+  if (value === "true") return { ok: true, value: true };
+  if (value === "false") return { ok: true, value: false };
+  if (/^[+-]?(?:\d+(?:\.\d+)?|inf|nan)$/i.test(value)) return { ok: true, value: Number(value.replaceAll("_", "")) };
+  // Keep accepting the historical bare-string subset while reporting truly
+  // structured TOML that this reader cannot safely interpret.
+  if (/^[A-Za-z0-9_./:@+-]+$/.test(value)) return { ok: true, value };
+  return { ok: false };
 }
 
 function auditCodexConfig(path, label) {
@@ -153,32 +257,56 @@ function auditCodexConfig(path, label) {
   let text;
   try { text = readFileSync(path, "utf8"); } catch { return; }
 
-  let section = "";
+  let section = [];
   const root = {};
+  const profiles = {};
   const servers = {};
-  for (const rawLine of text.split(/\r?\n/)) {
+  for (const [index, rawLine] of text.split(/\r?\n/).entries()) {
     const line = rawLine.trim();
     if (!line || line.startsWith("#")) continue;
-    const header = line.match(/^\[\[?([^\]]+)\]\]?$/);
-    if (header) { section = header[1]; continue; }
-    const assignment = line.match(/^([A-Za-z0-9_-]+)\s*=\s*(.+)$/);
-    if (!assignment) continue;
-    const [, key, rawValue] = assignment;
-    const value = tomlValue(rawValue);
+    const header = line.match(/^\[\[?([\s\S]+?)\]\]?\s*(?:#.*)?$/);
+    if (line.startsWith("[") && !header) {
+      add("info", label, `could not inspect TOML table on line ${index + 1}: ${trim(line)}`,
+        "rewrite this security-relevant config using a supported table shape or review it manually");
+      section = [];
+      continue;
+    }
+    if (header) {
+      section = tomlPath(header[1]);
+      if (!section) {
+        add("info", label, `could not inspect TOML table on line ${index + 1}: ${trim(line)}`,
+          "rewrite this security-relevant config using a supported table shape or review it manually");
+        section = [];
+      }
+      continue;
+    }
+    const assignment = splitAssignment(line);
+    const keyPath = assignment && tomlPath(assignment[0]);
+    const parsed = assignment && tomlValue(assignment[1]);
+    if (!assignment || !keyPath || !parsed?.ok) {
+      if (line.includes("=")) add("info", label, `could not inspect TOML assignment on line ${index + 1}: ${trim(line)}`,
+        "rewrite this security-relevant config using strings, arrays, or inline tables, or review it manually");
+      continue;
+    }
+    const fullPath = [...section, ...keyPath];
+    const value = parsed.value;
 
-    if (!section) root[key] = value;
-
-    const mcp = section.match(/^mcp_servers\.([^.]+)(?:\.(env))?$/);
-    if (mcp) {
-      const server = servers[mcp[1]] ??= {};
-      if (mcp[2] === "env") (server.env ??= {})[key] = value;
-      else server[key] = value;
+    if (fullPath.length === 1) root[fullPath[0]] = value;
+    if (fullPath[0] === "profiles" && fullPath.length === 3) {
+      (profiles[fullPath[1]] ??= {})[fullPath[2]] = value;
     }
 
-    const hook = section.match(/^hooks\.([^.]+)\.hooks$/);
-    if (hook && key === "command" && typeof value === "string") {
-      auditHookCommand(value, label, hook[1]);
-      if (hook[1] === "SessionStart") {
+    if (fullPath[0] === "mcp_servers" && fullPath.length >= 2) {
+      const server = servers[fullPath[1]] ??= {};
+      if (fullPath.length === 2 && value && typeof value === "object" && !Array.isArray(value)) Object.assign(server, value);
+      else if (fullPath[2] === "env" && fullPath.length === 4) (server.env ??= {})[fullPath[3]] = value;
+      else if (fullPath.length === 3) server[fullPath[2]] = value;
+    }
+
+    const hookEvent = fullPath[0] === "hooks" && fullPath.includes("hooks") ? fullPath[1] : null;
+    if (hookEvent && fullPath.at(-1) === "command" && typeof value === "string") {
+      auditHookCommand(value, label, hookEvent);
+      if (hookEvent === "SessionStart") {
         add("info", `${label} (SessionStart hook)`, `runs on every session start: ${trim(value)}`,
           "SessionStart is a re-execution vector; confirm you added this hook yourself");
       }
@@ -195,6 +323,16 @@ function auditCodexConfig(path, label) {
     }
     if (root.approval_policy === "never") {
       add("warn", label, "approval_policy is never", "use a prompting approval policy for commands outside the sandbox");
+    }
+  }
+  for (const [name, profile] of Object.entries(profiles)) {
+    const where = `${label} (profile "${name}")`;
+    if (profile.sandbox_mode === "danger-full-access" && profile.approval_policy === "never") {
+      add("critical", where, "danger-full-access is combined with approval_policy = never",
+        "restore workspace-write/read-only sandboxing or an approval policy before using this profile");
+    } else {
+      if (profile.sandbox_mode === "danger-full-access") add("warn", where, "sandbox_mode is danger-full-access", "prefer workspace-write unless broad host access is required");
+      if (profile.approval_policy === "never") add("warn", where, "approval_policy is never", "use a prompting approval policy for interactive profile runs");
     }
   }
   if (SECRET_SHAPES.test(text)) {

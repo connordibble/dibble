@@ -24,8 +24,8 @@ function runHook(filePath) {
   });
 }
 
-function runHookPayload(payload) {
-  return spawnSync("node", [SCRIPT, "--hook"], { input: JSON.stringify(payload), encoding: "utf8" });
+function runHookPayload(payload, options = {}) {
+  return spawnSync("node", [SCRIPT, "--hook"], { input: JSON.stringify(payload), encoding: "utf8", ...options });
 }
 
 function runAudit(args) {
@@ -117,6 +117,25 @@ test("hook reads Codex's documented apply_patch tool_input.command field", () =>
   assert.match(r.stderr, /bg-zinc-900/);
 });
 
+test("hook resolves Codex apply_patch paths against the documented payload cwd", () => {
+  write("src/components/CodexRelative.tsx", `<div className="bg-zinc-900" />`);
+  const patch = `*** Begin Patch\n*** Update File: src/components/CodexRelative.tsx\n@@\n+<div className="bg-zinc-900" />\n*** End Patch\n`;
+  const r = runHookPayload(
+    { cwd: root, hook_event_name: "PostToolUse", tool_name: "apply_patch", tool_input: { command: patch } },
+    { cwd: tmpdir() },
+  );
+  assert.equal(r.status, 2, r.stderr);
+  assert.match(r.stderr, /bg-zinc-900/);
+});
+
+test("hook fails loud when declared edit paths cannot be resolved", () => {
+  const patch = `*** Begin Patch\n*** Update File: src/components/Missing.tsx\n*** End Patch\n`;
+  const r = runHookPayload({ cwd: root, hook_event_name: "PostToolUse", tool_name: "apply_patch", tool_input: { command: patch } });
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /none resolved/);
+  assert.match(r.stderr, /Missing\.tsx/);
+});
+
 test("hook scans every file in a multi-file apply_patch", () => {
   const a = write("src/components/A.tsx", `<div className="text-red-500" />`);
   const b = write("src/components/B.tsx", `<div className="border-blue-600" />`);
@@ -134,6 +153,19 @@ test("hook no-ops on an unknown payload shape rather than crashing", () => {
 
 test("Next.js metadata images (no CSS cascade) are exempt", () => {
   const f = write("src/app/opengraph-image.tsx", `export default () => <div style={{ background: "#18181b" }} />;`);
+  const r = runHook(f);
+  assert.equal(r.status, 0, r.stderr);
+});
+
+test("URL fragments and browser metadata colors do not produce token violations", () => {
+  const f = write(
+    "src/components/Metadata.tsx",
+    [
+      `const docs = "https://example.com/#ff0000-guide";`,
+      `export const metadata = { themeColor: "#2563eb" };`,
+      `<meta name="theme-color" content="#2563eb" />;`,
+    ].join("\n"),
+  );
   const r = runHook(f);
   assert.equal(r.status, 0, r.stderr);
 });

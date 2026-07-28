@@ -115,16 +115,39 @@ export function parseDtcg(text) {
     if (isTokenNode(node)) {
       const key = path.join(".");
       if (!key) return;
-      const pointerParts = decodePointer(node.$ref);
-      const completeTokenRef = pointerParts?.at(-1) === "$value"
-        ? pointerParts.slice(0, -1).join(".")
-        : null;
-      const rawValue = Object.hasOwn(node, "$value") ? node.$value : pointerValue(node.$ref);
+      const hasValue = Object.hasOwn(node, "$value");
+      const hasRef = Object.hasOwn(node, "$ref");
+      let rawValue = node.$value;
+      let alias = detectDtcgAlias(node.$value);
+      let referenceError = null;
+
+      if (hasValue && hasRef) {
+        referenceError = `defines both $value and $ref (${node.$ref})`;
+      } else if (hasRef) {
+        const pointerParts = decodePointer(node.$ref);
+        if (!pointerParts) {
+          referenceError = `$ref must be a local JSON Pointer: ${stableStringify(node.$ref)}`;
+        } else {
+          const target = pointerValue(node.$ref);
+          if (target === undefined) {
+            referenceError = `dangling $ref: ${node.$ref}`;
+          } else if (pointerParts.at(-1) === "$value") {
+            rawValue = target;
+            alias = pointerParts.slice(0, -1).join(".");
+          } else if (isTokenNode(target)) {
+            rawValue = target.$value;
+            alias = pointerParts.join(".");
+          } else {
+            rawValue = target;
+          }
+        }
+      }
       const value = stableStringify(rawValue);
       tokens.set(key, {
         value,
         type,
-        alias: detectDtcgAlias(node.$value) ?? completeTokenRef,
+        alias,
+        ...(referenceError ? { referenceError } : {}),
         ignored,
       });
       return;
@@ -179,6 +202,13 @@ export function resolveAliases(input) {
   const resolved = new Map();
   const findings = [];
   const cycleKeys = new Set();
+  const unresolvedKeys = new Set();
+
+  function markUnresolved(key, reference, reason) {
+    if (unresolvedKeys.has(key)) return;
+    unresolvedKeys.add(key);
+    findings.push({ key, verdict: "UNRESOLVED_REF", reference, reason });
+  }
 
   function markCycle(stack, key) {
     const start = stack.indexOf(key);
@@ -195,6 +225,13 @@ export function resolveAliases(input) {
     const token = input.get(key);
     if (!token) return null;
 
+    if (token.referenceError) {
+      markUnresolved(key, token.alias, token.referenceError);
+      const copy = { ...token, unresolved: true };
+      resolved.set(key, copy);
+      return copy;
+    }
+
     if (!token.alias) {
       const copy = { ...token };
       resolved.set(key, copy);
@@ -209,8 +246,10 @@ export function resolveAliases(input) {
     }
 
     const target = visit(token.alias, [...stack, key]);
-    if (!target || target.cycle) {
-      const copy = { ...token, cycle: Boolean(target?.cycle) };
+    if (!target || target.cycle || target.unresolved) {
+      if (!target) markUnresolved(key, token.alias, `alias target does not exist: ${token.alias}`);
+      else if (target.unresolved) markUnresolved(key, token.alias, `alias target is unresolved: ${token.alias}`);
+      const copy = { ...token, cycle: Boolean(target?.cycle), unresolved: !target || Boolean(target?.unresolved) };
       resolved.set(key, copy);
       return copy;
     }

@@ -15,7 +15,7 @@
  */
 
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
-import { dirname, extname, join, resolve, basename, relative } from "node:path";
+import { dirname, extname, join, resolve, basename, relative, isAbsolute } from "node:path";
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -145,6 +145,16 @@ const FN_LITERAL = /\b(?:rgba?|hsla?|oklch|oklab)\((?:[^()]|\([^)]*\))*\)/g;
 const IGNORE_MARKER = /tokenlock-ignore/;
 const COMMENT_LINE = /^\s*(?:\/\/|\*|\/\*|<!--|\{\/\*)/;
 
+function isUrlColorFragment(line, index) {
+  return /https?:\/\/[^\s"'<>]*$/i.test(line.slice(0, index));
+}
+
+function isMetadataColor(line, index) {
+  const before = line.slice(0, index);
+  return /(?:themeColor|msapplication-TileColor)\s*[:=]\s*["']?$/i.test(before)
+    || (/<meta\b/i.test(line) && /(?:theme-color|msapplication-TileColor)/i.test(line));
+}
+
 function isCssLike(ext) {
   return ext === ".css" || ext === ".scss";
 }
@@ -173,6 +183,7 @@ function scanSource(text, ext, config, index) {
     // Raw color literals (hex / rgb / hsl / oklch)
     for (const m of line.matchAll(HEX_LITERAL)) {
       if (config.allowValues.includes(normalizeColor(m[0]))) continue;
+      if (isUrlColorFragment(line, m.index) || isMetadataColor(line, m.index)) continue;
       // Inside an arbitrary utility it was already reported above.
       if (line.slice(Math.max(0, m.index - 1), m.index) === "[") continue;
       push("raw-hex", m[0], suggestFor(m[0], index) ?? "no token matches this value — use an existing token or add one to the token file");
@@ -266,8 +277,16 @@ function runHookMode() {
   let payload;
   try { payload = JSON.parse(input); } catch { process.exit(0); }
 
-  const candidates = hookFilePaths(payload).filter((p) => existsSync(p));
-  if (!candidates.length) process.exit(0);
+  const declaredPaths = hookFilePaths(payload);
+  if (!declaredPaths.length) process.exit(0);
+  const hookCwd = typeof payload?.cwd === "string" ? payload.cwd : process.cwd();
+  const candidates = declaredPaths
+    .map((path) => isAbsolute(path) ? path : resolve(hookCwd, path))
+    .filter((path) => existsSync(path));
+  if (!candidates.length) {
+    process.stderr.write(`tokenlock: hook declared ${declaredPaths.length} edited path(s), but none resolved from ${hookCwd}: ${declaredPaths.join(", ")}\n`);
+    process.exit(2);
+  }
 
   // All edited files share a project root; derive it from the first one.
   const projectRoot = findProjectRoot(dirname(resolve(candidates[0])));

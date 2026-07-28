@@ -99,16 +99,30 @@ test("Codex VERIFY findings use additional context because ask is unsupported", 
   assert.match(decision.additionalContext, /hallucinated names|confirm it exists/);
 });
 
-test("lifecycle-script flags are blocked", () => {
+test("Codex model metadata also selects the documented additional-context path", () => {
+  const r = spawnSync("node", [SCRIPT, "--hook"], {
+    input: JSON.stringify({ model: "gpt-codex", tool_input: { command: "npm install ai-utils-helper" } }),
+    encoding: "utf8",
+  });
+  const decision = JSON.parse(r.stdout).hookSpecificOutput;
+  assert.equal(decision.permissionDecision, undefined);
+  assert.match(decision.additionalContext, /Confirm the package/);
+});
+
+test("pnpm allow-scripts is blocked", () => {
   const { decision } = hook("pnpm add some-lib --allow-scripts");
   assert.equal(decision.permissionDecision, "deny");
   assert.match(decision.permissionDecisionReason, /lifecycle scripts/);
 });
 
-test("lifecycle-script flags are blocked before or after the install verb", () => {
-  assert.equal(hook("npm --unsafe-perm install some-lib").decision.permissionDecision, "deny");
+test("allow-scripts is blocked before or after the install verb", () => {
   assert.equal(hook("pnpm --allow-scripts add some-lib").decision.permissionDecision, "deny");
   assert.equal(hook("python -m pip --no-input install reqeusts").decision.permissionDecision, "deny");
+});
+
+test("npm output and legacy permission flags are not misreported as enabling lifecycle scripts", () => {
+  assert.equal(evaluate("npm install react --foreground-scripts").length, 0);
+  assert.equal(evaluate("npm --unsafe-perm install react").length, 0);
 });
 
 test("sudo pip install is blocked", () => {
@@ -126,6 +140,36 @@ test("non-registry sources ask for verification", () => {
 test("install commands chained after other commands are still seen", () => {
   const { decision } = hook("cd /tmp && npm install chalt");
   assert.equal(decision.permissionDecision, "deny");
+  const escaped = hook('echo "quoted \\"text\\"" && npm install lodahs');
+  assert.equal(escaped.decision.permissionDecision, "deny");
+});
+
+test("newlines, subshells, environment prefixes, sudo flags, and executable paths cannot bypass installs", () => {
+  for (const command of [
+    "echo preparing\nnpm install lodahs",
+    "(npm install lodahs)",
+    "NODE_ENV=production npm install lodahs",
+    "env NODE_ENV=production npm install lodahs",
+    "sudo -H npm install lodahs",
+    "sudo --user root npm install lodahs",
+    "env --unset NODE_ENV npm install lodahs",
+    "command npm install lodahs",
+    "/usr/bin/npm install lodahs",
+  ]) {
+    const { decision } = hook(command);
+    assert.equal(decision.permissionDecision, "deny", command);
+  }
+});
+
+test("an unfamiliar wrapper around a recognizable install fails loud", () => {
+  const result = evaluate("wrapper npm install lodahs");
+  assert.equal(result.length, 1);
+  assert.match(result[0].notes[0].why, /could not safely model/);
+});
+
+test("quoted connectors do not split a package specification", () => {
+  const parsed = parseInstall("npm install 'file:packages/a|b'");
+  assert.deepEqual(parsed.specs, ["file:packages/a|b"]);
 });
 
 test("clean install produces no decision (exit 0, empty stdout)", () => {
