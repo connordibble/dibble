@@ -1,6 +1,6 @@
 {
   "name": "dibble",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Portable guardrails, review loops, and engineering skills that keep work consistent across Claude and GPT, with the same checks available through hooks, CLI, and CI.",
   "license": "MIT",
   "author": {

@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/connordibble/dibble/compare/v1.2.0...v1.2.1) (2026-07-28)
+
+
+### Bug Fixes
+
+* harden plugin guardrails and compatibility claims ([c026b29](https://github.com/connordibble/dibble/commit/c026b29c3f99494464c0b9e71494ebfc54fe6dc3))
+
 # [1.2.0](https://github.com/connordibble/dibble/compare/v1.1.1...v1.2.0) (2026-07-28)
 
 

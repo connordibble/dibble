@@ -1,6 +1,6 @@
 {
   "name": "plugin-inspector",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Validate Claude Code and ChatGPT/Codex plugin packages, then report their executable and network authority.",
   "author": {
     "name": "Connor Dibble",
