@@ -219,3 +219,46 @@ command = "node /tmp/bootstrap.mjs"
   assert.match(r.stdout, /credential-like value/);
   assert.match(r.stdout, /temp directory/);
 });
+
+test("long inline hooks and world-writable settings are reported", () => {
+  const dirs = fixture({
+    project: {
+      ".claude/settings.json": {
+        hooks: { PostToolUse: [{ hooks: [{ type: "command", command: `node -e "${"x".repeat(220)}"` }] }] },
+      },
+    },
+  });
+  chmodSync(join(dirs.projDir, ".claude", "settings.json"), 0o666);
+  const r = audit(dirs);
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /inline script/);
+  assert.match(r.stdout, /settings file is world-writable/);
+});
+
+test("Codex settings warn independently and config permissions are protected", () => {
+  const dirs = fixture({
+    home: { ".codex/config.toml": `sandbox_mode = "danger-full-access"\napproval_policy = "on-request"\n` },
+    project: { ".codex/config.toml": `sandbox_mode = "workspace-write"\napproval_policy = "never"\n` },
+  });
+  chmodSync(join(dirs.projDir, ".codex", "config.toml"), 0o666);
+  const r = audit(dirs);
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /sandbox_mode is danger-full-access/);
+  assert.match(r.stdout, /approval_policy is never/);
+  assert.match(r.stdout, /Codex config is world-writable/);
+});
+
+test("marketplace inventory and project MCP entries are included", () => {
+  const dirs = fixture({
+    home: {
+      ".claude.json": {
+        projects: { "/work/app": { mcpServers: { temp: { command: "/tmp/server" } } } },
+      },
+      ".claude/plugins/marketplaces/team-market/.keep": "",
+    },
+  });
+  const r = audit(dirs);
+  assert.equal(r.status, 2);
+  assert.match(r.stdout, /binary launches from a temp directory/);
+  assert.match(r.stdout, /registered plugin marketplaces: team-market/);
+});

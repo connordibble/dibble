@@ -45,6 +45,10 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Enforce 95% line coverage
+        if: matrix.node == 24
+        run: pnpm test:coverage
+
       - name: Pack dry-run
         run: pnpm pack --dry-run
 

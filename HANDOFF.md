@@ -74,5 +74,6 @@ squishier than the others. Write and freeze the fixture format (the run-summary
 pnpm validate      # Claude + Codex marketplace/plugin structure
 pnpm lint:prose    # sloplint --strict on root/plugin READMEs + SKILL.md
 pnpm lint:readmes  # root/plugin READMEs pass the readme auditor
-pnpm test          # all plugin test suites (116 tests)
+pnpm test          # all plugin test suites (127 tests)
+pnpm test:coverage # same suite with a 95% line-coverage floor
 ```

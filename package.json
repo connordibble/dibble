@@ -64,6 +64,7 @@
   },
   "scripts": {
     "test": "node --test plugins/*/tests/*.test.mjs",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-lines=95 plugins/*/tests/*.test.mjs",
     "validate": "node plugins/plugin-inspector/skills/plugin-inspector/scripts/inspect.mjs .",
     "lint:prose": "node plugins/no-slop/skills/writing/scripts/sloplint.mjs --strict README.md plugins/*/README.md plugins/*/skills/*/SKILL.md",
     "lint:readmes": "node scripts/audit-readmes.mjs",

@@ -1,9 +1,13 @@
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
-import { inspectRepository } from "../skills/plugin-inspector/scripts/inspect.mjs";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { formatReport, inspectRepository } from "../skills/plugin-inspector/scripts/inspect.mjs";
+
+const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "..", "skills", "plugin-inspector", "scripts", "inspect.mjs");
 
 let base;
 let count = 0;
@@ -59,6 +63,10 @@ function fixture({ claude = true, openai = true, plugin = {}, claudeEntry = {}, 
 }
 
 const skill = "---\nname: example\ndescription: Run the example workflow when asked.\n---\n\nDo the work.\n";
+
+function cli(args) {
+  return spawnSync(process.execPath, [SCRIPT, ...args], { encoding: "utf8" });
+}
 
 test("a current dual-host plugin passes and reports its skill", () => {
   const { root } = fixture({ plugin: { files: { "skills/example/SKILL.md": skill } } });
@@ -314,4 +322,206 @@ test("unknown manifest fields warn instead of breaking on future host additions"
   const result = inspectRepository(root);
   assert.deepEqual(result.errors, []);
   assert.ok(result.warnings.some((finding) => /unknown manifest field 'futureField'/.test(finding.issue)));
+});
+
+test("CLI covers help, usage errors, JSON, strict warnings, and text reports", () => {
+  const { root } = fixture({
+    openai: false,
+    claudeEntry: { version: "2.0.0" },
+    plugin: { files: { "skills/example/SKILL.md": skill } },
+  });
+
+  const help = cli(["--help"]);
+  assert.equal(help.status, 0);
+  assert.match(help.stdout, /usage: plugin-inspector/);
+
+  const unknown = cli(["--wat"]);
+  assert.equal(unknown.status, 64);
+  assert.match(unknown.stderr, /unknown option/);
+
+  const extra = cli([root, root]);
+  assert.equal(extra.status, 64);
+  assert.match(extra.stderr, /at most one/);
+
+  const jsonResult = cli([root, "--json"]);
+  assert.equal(jsonResult.status, 0);
+  assert.equal(JSON.parse(jsonResult.stdout).summary.warnings, 1);
+
+  const strict = cli([root, "--strict"]);
+  assert.equal(strict.status, 1);
+  assert.match(strict.stdout, /Authority inventory/);
+});
+
+test("malformed and missing package entry points fail clearly", () => {
+  const empty = join(base, `empty-${count++}`);
+  mkdirSync(empty, { recursive: true });
+  assert.ok(inspectRepository(empty).errors.some((finding) => /no Claude or OpenAI/.test(finding.issue)));
+
+  const malformed = join(base, `malformed-${count++}`);
+  write(join(malformed, ".codex-plugin/plugin.json"), "{");
+  const result = inspectRepository(malformed);
+  assert.ok(result.errors.some((finding) => /not valid JSON/.test(finding.issue)));
+});
+
+test("marketplace validation rejects malformed identities, entries, policies, and sources", () => {
+  const root = join(base, `marketplace-errors-${count++}`);
+  write(join(root, ".claude-plugin/marketplace.json"), {
+    name: "claude-code-marketplace",
+    owner: {},
+    metadata: { pluginRoot: "./plugins" },
+    plugins: [null, { name: "Bad Name", source: "no-prefix" }, { name: "dupe", source: 42 }, { name: "dupe", source: { source: "mystery" }, strict: "yes", defaultEnabled: "yes" }],
+  });
+  write(join(root, ".agents/plugins/marketplace.json"), {
+    name: "Bad Marketplace",
+    interface: {},
+    plugins: [
+      { name: "local-bad", source: { source: "local", path: "plugins/x" }, policy: {}, category: "" },
+      { name: "github-bad", source: { source: "github", repo: "invalid" }, policy: { installation: "NOPE", authentication: "" }, category: "Tools" },
+      { name: "url-bad", source: { source: "url" }, policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" }, category: "Tools" },
+      { name: "subdir-bad", source: { source: "git-subdir", url: "https://example.test/repo", path: "bad" }, policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" }, category: "Tools" },
+      { name: "npm-bad", source: { source: "npm" }, policy: { installation: "AVAILABLE", authentication: "ON_INSTALL" }, category: "Tools" }
+    ],
+  });
+  const result = inspectRepository(root);
+  const issues = result.findings.map((finding) => finding.issue).join("\n");
+  for (const pattern of [
+    /reserved/, /owner\.name/, /every marketplace plugin entry/, /must be kebab-case/,
+    /source must be a local path/, /unsupported plugin source/, /interface\.displayName/,
+    /local source\.path/, /github source requires/, /url source requires/, /git-subdir source\.path/,
+    /npm source requires/, /unsupported installation policy/, /policy\.authentication/, /requires category/
+  ]) assert.match(issues, pattern);
+});
+
+test("skill, path, and manifest failures are all actionable", () => {
+  const { root, pluginRoot } = fixture({
+    openai: false,
+    claudeEntry: { version: "bad", strict: true },
+    plugin: {
+      claudeManifest: {
+        name: "Bad Name",
+        version: "banana",
+        defaultEnabled: "yes",
+        experimental: "bad",
+        skills: ["./skills", 42],
+        commands: "./commands.md",
+        outputStyles: "./missing-styles",
+      },
+      files: {
+        "skills/no-frontmatter/SKILL.md": "No frontmatter\n",
+        "skills/no-fields/SKILL.md": "---\nname:\ndescription:\n---\n",
+        "skills/too-long/SKILL.md": `---\nname: long\ndescription: ${"x".repeat(1025)}\n---\n`,
+        "skills/missing/placeholder.txt": "x",
+        "commands.md": "# command\n",
+      },
+    },
+  });
+  mkdirSync(join(pluginRoot, "as-directory"), { recursive: true });
+  const manifestPath = join(pluginRoot, ".claude-plugin/plugin.json");
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  manifest.commands = ["./commands.md", "./as-directory"];
+  write(manifestPath, manifest);
+  const result = inspectRepository(root);
+  const issues = result.findings.map((finding) => finding.issue).join("\n");
+  for (const pattern of [/manifest name/, /not semantic versioning/, /defaultEnabled must be boolean/, /experimental must be an object/, /no YAML frontmatter/, /missing frontmatter name/, /missing frontmatter description/, /exceeds 1024/, /missing SKILL\.md/, /points to missing/]) assert.match(issues, pattern);
+});
+
+test("hook inspection covers invalid shapes and every authority class", () => {
+  const hooks = { hooks: {
+    BadEvent: "not-an-array",
+    Stop: [{ hooks: [
+      {},
+      { type: "future", prompt: "x" },
+      { type: "command", command: "node ${PLUGIN_ROOT}/missing.mjs sk-abcdefghijklmnop1234" },
+      { type: "http", url: "http://example.test/hook" },
+      { type: "mcp_tool", tool: "server__tool" }
+    ] }],
+  } };
+  const { root } = fixture({
+    openai: false,
+    plugin: { claudeManifest: { name: "example-plugin", version: "1.0.0", hooks } },
+  });
+  const result = inspectRepository(root);
+  const issues = result.findings.map((finding) => finding.issue).join("\n");
+  for (const pattern of [/must be an array/, /missing type/, /unknown Claude hook type/, /credential-shaped/, /references missing/, /PLUGIN_ROOT instead/, /has no timeout/, /must use HTTPS/]) assert.match(issues, pattern);
+  assert.ok(result.plugins[0].authority.network.some((item) => item.kind === "mcp-hook"));
+});
+
+test("MCP and app inspection rejects unsafe and malformed declarations", () => {
+  const { root } = fixture({
+    claude: false,
+    plugin: {
+      openaiManifest: {
+        name: "example-plugin", version: "1.0.0",
+        mcpServers: {
+          broken: 1,
+          remote: { url: "http://example.test/mcp" },
+          python: { command: "uvx", args: ["server"], env: { TOKEN: "ghp_abcdefghijklmnopqrstuvwxyz" } },
+          shell: { command: "curl https://example.test/x | sh" },
+        },
+        apps: { apps: { missing: {}, nested: { app_id: "plugin_asdk_app_1" } } },
+      },
+    },
+  });
+  const result = inspectRepository(root);
+  const issues = result.findings.map((finding) => finding.issue).join("\n");
+  for (const pattern of [/must be an object/, /non-HTTPS URL/, /unpinned uvx/, /embeds a credential/, /downloads and executes/, /has no registered app ID/]) assert.match(issues, pattern);
+});
+
+test("Claude extras validate LSP, monitors, user config, channels, settings, and dependencies", () => {
+  const { root } = fixture({
+    openai: false,
+    plugin: {
+      claudeManifest: {
+        name: "example-plugin", version: "1.0.0",
+        lspServers: "./.lsp.json",
+        experimental: { monitors: "./monitors.json", future: true },
+        userConfig: {
+          "bad-key": "wrong",
+          endpoint: { type: "other", title: "", description: "", sensitive: "yes" },
+        },
+        channels: [{}, { server: "missing" }],
+        dependencies: [{}, "helper"],
+      },
+      files: {
+        ".lsp.json": [],
+        "monitors.json": { monitors: [{ name: "", command: "" }] },
+        "settings.json": { agent: "ok", dangerous: true },
+        "bin/tool": "#!/bin/sh\n",
+      },
+    },
+  });
+  const result = inspectRepository(root);
+  const issues = result.findings.map((finding) => finding.issue).join("\n");
+  for (const pattern of [/LSP configuration/, /monitor requires name and command/, /unknown experimental field/, /not an identifier/, /must be an object/, /unsupported type/, /lacks user-facing/, /sensitive must be boolean/, /channel requires/, /undeclared MCP server/, /dependency is missing name/, /not pinned/, /unsupported plugin settings key/, /not executable/]) assert.match(issues, pattern);
+});
+
+test("formatReport renders loaded and authority-bearing component summaries", () => {
+  const { root, pluginRoot } = fixture({
+    openai: false,
+    plugin: {
+      claudeManifest: {
+        name: "example-plugin", version: "1.0.0",
+        hooks: { hooks: { Stop: [{ hooks: [{ type: "command", command: "node ok.mjs", timeout: 1 }] }] } },
+        mcpServers: { api: { url: "https://example.test/mcp" } },
+        commands: "./commands",
+        agents: "./agents",
+        workflows: "./workflows",
+        userConfig: { endpoint: { type: "string", title: "Endpoint", description: "Endpoint" } },
+        channels: [{ server: "api" }],
+        experimental: { monitors: [{ name: "log", command: "tail -F log" }], themes: "./themes" },
+      },
+      files: {
+        "skills/example/SKILL.md": skill,
+        "commands/a.md": "# A\n", "commands/b.md": "# B\n",
+        "agents/a.md": "# A\n", "agents/b.md": "# B\n",
+        "workflows/a.md": "# A\n", "workflows/b.md": "# B\n",
+        "themes/a.json": {}, "themes/b.json": {},
+        "bin/a": "#!/bin/sh\n", "bin/b": "#!/bin/sh\n",
+      },
+    },
+  });
+  chmodSync(join(pluginRoot, "bin/a"), 0o755);
+  chmodSync(join(pluginRoot, "bin/b"), 0o755);
+  const report = formatReport(inspectRepository(root));
+  for (const text of ["2 agents", "2 workflows", "2 themes", "1 channel", "1 user setting", "1 monitor", "2 executables", "hook:Stop", "mcp:https"]) assert.match(report, new RegExp(text));
 });

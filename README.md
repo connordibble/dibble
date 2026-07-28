@@ -115,7 +115,8 @@ This repo holds itself to what it sells. On every push, CI runs:
 - **plugin-inspector** validates both marketplace formats, every local plugin
   manifest, component paths, and declared authority — the plugin inspecting its
   own package
-- **116 tests** across every deterministic script (`node --test`)
+- **127 tests** across every deterministic script, with a **95% line-coverage
+  floor** enforced in CI (`pnpm test:coverage` currently reports 95.68%)
 - **60 behavioral cases** cover direct and indirect activation, missing
   context, non-activation, and unsafe edges for all 12 skills; plugin-inspector
   fails if a skill loses coverage
