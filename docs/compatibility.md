@@ -13,14 +13,15 @@ plugin. Those Codex manifests point at the existing portable `skills/`
 directories and use source paths such as `./plugins/design-verify`, so Codex
 can install the plugin instead of only rendering the Claude marketplace card.
 
-**Automatic hooks now travel to Codex too.** Codex supports the same
-PreToolUse/PostToolUse hook events as Claude Code, auto-discovers a plugin's
-bundled `hooks/hooks.json`, and honors `CLAUDE_PLUGIN_ROOT` for compatibility,
-so tokenlock and install-gate enforce automatically on both. tokenlock's
-matcher covers Codex's `apply_patch` tool alongside Claude's `Write`/`Edit`, and
-its hook reads the file path from either payload shape. What stays Claude-only
-is slash commands; Cursor and Gemini CLI run the skills and CLIs but not the
-automatic hooks.
+**Bundled hooks travel to Codex too.** Codex discovers a plugin's
+`hooks/hooks.json`, supports PreToolUse/PostToolUse for Bash and `apply_patch`,
+and provides `CLAUDE_PLUGIN_ROOT` for compatibility. Non-managed command hooks
+do not run merely because the plugin is installed or enabled: Codex shows the
+exact definition for review and skips it until the user trusts its current
+hash. tokenlock's matcher covers `apply_patch` alongside Claude's `Write` and
+`Edit`, and its hook reads both hosts' documented payload fields. Slash commands
+remain Claude-only; Cursor and Gemini CLI run the skills and CLIs but not the
+bundled hook layer.
 
 | Plugin | Skill (portable) | Codex plugin | CLI script | Auto hook (Claude + Codex) | Claude command | CI usable |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -29,7 +30,7 @@ automatic hooks.
 | [install-gate](../plugins/install-gate) | ✅ | ✅ | ✅ | ✅ PreToolUse | n/a | ✅ |
 | [agent-audit](../plugins/agent-audit) | ✅ | ✅ | ✅ | n/a | ✅ `/agent-audit:audit` | ✅ |
 | [design-verify](../plugins/design-verify) | ✅ | ✅ | ✅ (linter half) | n/a | ✅ `/design-verify:verify` | ✅ (linter) |
-| [marketplace-kit](../plugins/marketplace-kit) | ✅ | ✅ | ✅ | n/a | ✅ `/marketplace-kit:validate` | ✅ |
+| [plugin-inspector](../plugins/plugin-inspector) | ✅ | ✅ | ✅ | n/a | ✅ `/plugin-inspector:inspect` | ✅ |
 | [receipts](../plugins/receipts) | ✅ | ✅ | ✅ | n/a | n/a | ✅ |
 | [zod-first-tools](../plugins/zod-first-tools) | ✅ | ✅ | ✅ | n/a | n/a | ✅ |
 | [no-slop](../plugins/no-slop) | ✅ | ✅ | ✅ | n/a | n/a | ✅ |
@@ -43,11 +44,13 @@ automatic hooks.
 The Codex sidecar exposes the portable skills and keeps every plugin source
 path under `./plugins/<name>`.
 
-**On Codex:** the hooks fire automatically once the plugin is installed, so
-tokenlock and install-gate intercept edits and installs the same way they do in
-Claude Code. (The hook wiring is verified against Codex's documented hook
-system; end-to-end confirmation on a live Codex install is tracked in
-[HANDOFF.md](../HANDOFF.md).)
+**On Codex:** enable tokenlock or install-gate, open `/hooks`, review the bundled
+command, and trust it before expecting enforcement. Codex records trust against
+the definition hash, so an updated hook requires review again. The payload and
+output contracts are covered by repository tests. All 11 plugins have also
+passed the current Codex desktop CLI's live marketplace parser and installer;
+the remaining interactive hook and Plugins Directory checks are tracked in
+[HANDOFF.md](../HANDOFF.md).
 
 **On Cursor or Gemini CLI:** every skill's knowledge applies and every CLI
 script runs the same way (`node skills/<name>/scripts/<script>.mjs ...`, or via

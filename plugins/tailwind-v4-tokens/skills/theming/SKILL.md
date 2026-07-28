@@ -5,11 +5,12 @@ description: Tailwind CSS v4 theming and design tokens done right - @theme, CSS-
 
 # Tailwind v4 theming: tokens first
 
-In v4 there is no `tailwind.config.js`. The theme IS CSS: custom properties
-declared in an `@theme` block, from which Tailwind generates utilities. Get
-the token layer right and everything else (dark mode, Figma sync, consistent
-agents) follows from it. Get it wrong and utilities silently vanish or
-resolve to the wrong values.
+Tailwind v4 is CSS-first: the theme is custom properties declared in an
+`@theme` block, from which Tailwind generates utilities. A legacy JavaScript
+config can still be loaded explicitly with `@config`, but it is no longer
+auto-detected or the primary configuration surface. Get the token layer right
+and everything else (dark mode, Figma sync, consistent agents) follows from
+it. Get it wrong and utilities silently vanish or resolve to the wrong values.
 
 ## The mental model
 

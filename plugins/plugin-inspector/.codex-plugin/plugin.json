@@ -1,0 +1,39 @@
+{
+  "name": "plugin-inspector",
+  "version": "1.1.1",
+  "description": "Validate Claude Code and ChatGPT/Codex plugin packages, then report their executable and network authority.",
+  "author": {
+    "name": "Connor Dibble",
+    "email": "dibbleconnor@gmail.com",
+    "url": "https://connordibble.dev"
+  },
+  "homepage": "https://github.com/connordibble/dibble/tree/main/plugins/plugin-inspector",
+  "repository": "https://github.com/connordibble/dibble",
+  "license": "MIT",
+  "keywords": [
+    "plugins",
+    "marketplace",
+    "claude-code",
+    "codex",
+    "chatgpt",
+    "validation",
+    "security"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Plugin Inspector",
+    "shortDescription": "Inspect plugin structure, authority, and host wiring.",
+    "longDescription": "Validate Claude Code and ChatGPT/Codex marketplaces, manifests, skills, hooks, MCP servers, app mappings, and assets. Reports what each plugin can execute and connect to.",
+    "developerName": "Connor Dibble",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Skills",
+      "CLI"
+    ],
+    "defaultPrompt": [
+      "Inspect this plugin before release.",
+      "Show what these plugins can execute and connect to."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

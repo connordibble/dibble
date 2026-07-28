@@ -7,8 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/skills/tokenlock/scripts/scan.mjs", "--hook"],
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/skills/tokenlock/scripts/scan.mjs\" --hook",
             "timeout": 15,
             "statusMessage": "tokenlock: checking design tokens"
           }

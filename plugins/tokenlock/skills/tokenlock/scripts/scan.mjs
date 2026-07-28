@@ -251,7 +251,7 @@ function hookFilePaths(payload) {
   // is a string) for `*** Add/Update/Move File:` markers.
   const patchBlobs = [
     typeof input === "string" ? input : null,
-    ...["input", "patch", "content", "text", "diff"].map((k) => (typeof input[k] === "string" ? input[k] : null)),
+    ...["command", "input", "patch", "content", "text", "diff"].map((k) => (typeof input[k] === "string" ? input[k] : null)),
   ].filter(Boolean);
   const marker = /^\*\*\* (?:Add|Update|Move(?: to)?) File:\s*(.+?)\s*$/gm;
   for (const blob of patchBlobs) {

@@ -43,6 +43,11 @@ hallucinated import before it becomes an install. For a non-registry source,
 confirm you trust the origin and, ideally, pin to a commit rather than a
 moving branch.
 
+Host behavior differs only in how that pause is represented: Claude Code
+returns an `ask` decision; Codex receives the finding as additional context
+because its hook protocol currently supports allow/deny but not ask. In Codex,
+honor that context and use the ordinary approval boundary before installing.
+
 Do not blanket-override the gate. When a flag is a false positive (a real,
 correctly-spelled package that happens to look generic), install it and move
 on. The gate exists to convert a silent install into a two-second decision,

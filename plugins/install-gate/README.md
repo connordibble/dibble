@@ -21,13 +21,14 @@ install-gate flagged: pnpm add chalt
 | Typosquats | `chalt`, `reqeusts`, `lodahs` | **deny** |
 | Scope impersonation | `@type/node` vs `@types/node` | **deny** |
 | Install-time execution | `--allow-scripts`, `--unsafe-perm`, `sudo pip install` | **deny** |
-| Slopsquat-shaped names | `ai-utils-helper` (the names models invent) | **ask**: verify it exists first |
-| Non-registry sources | git URLs, tarballs | **ask**: conscious yes required |
+| Slopsquat-shaped names | `ai-utils-helper` (the names models invent) | **verify** it exists first |
+| Non-registry sources | git URLs, tarballs | **verify** the origin consciously |
 
-Deny and ask are the hook's actual permission decisions: a deny stops the
-command and tells the agent why; an ask escalates to you with the reasoning
-attached. Chained commands are parsed too, so `cd /tmp && npm i chalt` is
-still seen.
+BLOCK is a deny on both hosts. Claude Code represents VERIFY as an `ask`
+permission decision. Codex hooks do not currently support `ask`, so the hook
+injects the same finding as additional context and leaves the normal Codex
+approval flow intact. Chained commands are parsed too, so
+`cd /tmp && npm i chalt` is still seen.
 
 ## Why offline
 

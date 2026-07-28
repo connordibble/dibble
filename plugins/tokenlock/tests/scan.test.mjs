@@ -109,6 +109,14 @@ test("hook fires on a Codex apply_patch payload (Update File envelope)", () => {
   assert.match(r.stderr, /bg-zinc-900/);
 });
 
+test("hook reads Codex's documented apply_patch tool_input.command field", () => {
+  const f = write("src/components/CodexCommand.tsx", `<div className="bg-zinc-900" />`);
+  const patch = `*** Begin Patch\n*** Update File: ${f}\n@@\n+<div className="bg-zinc-900" />\n*** End Patch\n`;
+  const r = runHookPayload({ hook_event_name: "PostToolUse", tool_name: "apply_patch", tool_input: { command: patch } });
+  assert.equal(r.status, 2, r.stderr);
+  assert.match(r.stderr, /bg-zinc-900/);
+});
+
 test("hook scans every file in a multi-file apply_patch", () => {
   const a = write("src/components/A.tsx", `<div className="text-red-500" />`);
   const b = write("src/components/B.tsx", `<div className="border-blue-600" />`);

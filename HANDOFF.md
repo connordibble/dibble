@@ -6,34 +6,26 @@ this is engineering follow-ups only; go-to-market lives in the gitignored
 
 ## Needs live verification (can't confirm from the dev box)
 
-### 1. Codex hook enforcement, end to end
-The tokenlock and install-gate hooks are wired for Codex and unit-tested
-against the documented payload shapes, but have not been run inside a live
-Codex install. Confirm on real Codex:
-- Installing the plugin from the `dibble` Codex marketplace registers the
-  bundled `hooks/hooks.json`.
-- tokenlock's PostToolUse hook fires on a Codex `apply_patch` edit and the
-  correction reaches the model. The matcher is `Write|Edit|apply_patch` and the
-  hook reads the file path from either `tool_input.file_path` (Claude) or an
-  `apply_patch` patch envelope (`*** Update/Add File:`); verify Codex's actual
-  `apply_patch` `tool_input` matches one of those shapes. If Codex nests the
-  patch under a different key, extend `hookFilePaths()` in
-  `plugins/tokenlock/skills/tokenlock/scripts/scan.mjs`.
-- install-gate's PreToolUse hook fires on a Codex `Bash` install and the
-  deny/ask decision is honored.
-- `${CLAUDE_PLUGIN_ROOT}` resolves in Codex (docs say it is supported for
-  compatibility; if not, switch the hook commands to `${PLUGIN_ROOT}` or add a
-  fallback).
+### 1. Host behavior beyond structural validation
+All 11 current plugins were installed and enabled from an isolated local
+marketplace with the Codex desktop CLI on 2026-07-27, then removed. The
+marketplace, manifests, skills, and bundled hook files passed the live parser
+and installer. Hook payload/output behavior remains covered by fixtures because
+trusting and firing a hook requires an interactive `/hooks` review in a fresh
+session.
 
-### 2. Codex marketplace sidecar schema
-`scripts/validate-codex-plugins.mjs` encodes an assumed schema for
-`.agents/plugins/marketplace.json` and `.codex-plugin/plugin.json` (source
-type `local`, `policy.authentication: ON_INSTALL`, the `interface` field set,
-etc.). This validates green against itself but was not checked against OpenAI's
-current build-plugins spec. Verify field names, required values, and the
-sidecar path against the live Codex docs, then reconcile the validator. If the
-schema differs, the Codex layer will validate locally but fail to load in
-Codex.
+Claude Code is not installed on this machine. `plugin-inspector` validates the
+current documented marketplace, manifest, component, hook, MCP, LSP, workflow,
+theme, monitor, user-config, channel, dependency, and bin contracts, but a live
+`claude plugin validate --strict` run remains a release-machine check.
+
+### 2. Plugin directory UI smoke test
+`plugin-inspector` now follows the current OpenAI packaging reference for
+`.agents/plugins/marketplace.json`, `.codex-plugin/plugin.json`, local/Git/npm
+sources, hooks, MCP servers, app mappings, and assets. The structural fixtures
+do not render the ChatGPT desktop Plugins Directory. Before release, refresh
+the local marketplace and confirm the renamed plugin's title, prompts, category,
+and installation flow in the live UI.
 
 ## Remaining catalog (plans are in docs/plans/)
 
@@ -64,9 +56,9 @@ squishier than the others. Write and freeze the fixture format (the run-summary
 
 ## Smaller follow-ups
 
-- **Codex validator not in the readme/prose gates.** `pnpm validate` runs it,
-  but consider whether the Codex sidecar deserves its own smoke test the way
-  the Claude marketplace is dogfooded by `marketplace-kit`.
+- **Plugin specs keep moving.** `plugin-inspector` warns on unknown fields
+  instead of rejecting them. Re-check the official Claude and OpenAI plugin
+  references when either host adds a new component or marketplace source.
 - **`design-verify` screenshot loop** is inherently host-dependent (needs a
   browser-preview tool). It is documented as a partial exception in
   `docs/compatibility.md`; no code change needed, just don't promise it on
@@ -82,5 +74,5 @@ squishier than the others. Write and freeze the fixture format (the run-summary
 pnpm validate      # Claude + Codex marketplace/plugin structure
 pnpm lint:prose    # sloplint --strict on root/plugin READMEs + SKILL.md
 pnpm lint:readmes  # root/plugin READMEs pass the readme auditor
-pnpm test          # all plugin test suites (99+ tests)
+pnpm test          # all plugin test suites (116 tests)
 ```

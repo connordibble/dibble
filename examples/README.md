@@ -34,8 +34,8 @@ npx dibble zod-lint examples/zod-first-tools
 # readme-that-sells — a README with no install command or example up top
 npx dibble readme-audit examples/readme-that-sells/bad-README.md
 
-# marketplace-kit — a misplaced skills/ directory and a version mismatch
-npx dibble validate-marketplace examples/marketplace-kit/broken-marketplace
+# plugin-inspector — broken cross-host paths plus a full authority inventory
+npx dibble plugin-inspector examples/plugin-inspector/broken-marketplace
 ```
 
 Every command above runs against a real fixture in this directory; nothing

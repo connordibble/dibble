@@ -1,13 +1,13 @@
 ---
 name: audit
-description: Security hygiene audit for the user's coding-agent configuration - hooks, permissions, MCP servers, and config file integrity. Use when asked to audit, review, or health-check a Claude Code / agent setup, after installing plugins or MCP servers from unfamiliar sources, when the user mentions agent supply-chain attacks or compromised packages, when something about the agent's behavior seems off, or as periodic hygiene. Read-only; reports findings with fixes but changes nothing.
+description: Security hygiene audit for the user's coding-agent configuration - hooks, permissions, MCP servers, and config file integrity. Use when asked to audit, review, or health-check a Claude Code or Codex setup, after installing plugins or MCP servers from unfamiliar sources, when the user mentions agent supply-chain attacks or compromised packages, when something about the agent's behavior seems off, or as periodic hygiene. Read-only; reports findings with fixes but changes nothing.
 ---
 
 # Auditing an agent configuration
 
 Coding agents are configured by files that other software can write:
-`~/.claude.json`, settings files with hooks, MCP server lists. The documented
-attacks all route through them. A malicious npm package that adds a
+Claude settings, Codex `config.toml`/`hooks.json`, and MCP server lists. The
+documented attacks all route through them. A malicious npm package that adds a
 SessionStart hook re-executes on every session; a rewritten MCP entry
 reroutes authenticated traffic to attacker infrastructure. This skill runs a
 read-only scanner over those files and helps the user act on what it finds.
@@ -26,7 +26,8 @@ modifies anything; fixes are the user's call.
 
 - **CRIT**: a pattern with a known exploit path: hooks piping downloads into
   interpreters, obfuscated payloads, world-writable hook scripts or config
-  files, plaintext MCP endpoints, `bypassPermissions` as default mode.
+  files, plaintext MCP endpoints, Claude `bypassPermissions`, or Codex
+  `danger-full-access` combined with `approval_policy = "never"`.
   Treat like a failing security control: resolve or consciously accept, today.
 - **warn**: weakens the security posture without being an exploit by itself:
   blanket `Bash` approvals, pre-approved dangerous patterns, inline

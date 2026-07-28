@@ -125,10 +125,10 @@
       "category": "Frontend"
     },
     {
-      "name": "marketplace-kit",
+      "name": "plugin-inspector",
       "source": {
         "source": "local",
-        "path": "./plugins/marketplace-kit"
+        "path": "./plugins/plugin-inspector"
       },
       "policy": {
         "installation": "AVAILABLE",

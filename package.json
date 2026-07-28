@@ -39,17 +39,18 @@
     "dibble-zod-lint": "plugins/zod-first-tools/skills/zod-first-tools/scripts/lint-tools.mjs",
     "dibble-readme-audit": "plugins/readme-that-sells/skills/readme/scripts/audit-readme.mjs",
     "dibble-responsive-smells": "plugins/design-verify/skills/design-verify/scripts/responsive-smells.mjs",
-    "dibble-validate-marketplace": "plugins/marketplace-kit/skills/marketplace-kit/scripts/validate-marketplace.mjs",
-    "dibble-validate-codex": "scripts/validate-codex-plugins.mjs"
+    "dibble-plugin-inspector": "plugins/plugin-inspector/skills/plugin-inspector/scripts/inspect.mjs",
+    "dibble-validate-marketplace": "plugins/plugin-inspector/skills/plugin-inspector/scripts/inspect.mjs",
+    "dibble-validate-codex": "plugins/plugin-inspector/skills/plugin-inspector/scripts/inspect.mjs"
   },
   "files": [
     "bin",
     "CHANGELOG.md",
     "docs/compatibility.md",
+    "evals",
     "examples",
     "plugins",
     "!plugins/*/tests",
-    "scripts/validate-codex-plugins.mjs",
     ".claude-plugin",
     ".agents",
     "SECURITY.md"
@@ -63,7 +64,7 @@
   },
   "scripts": {
     "test": "node --test plugins/*/tests/*.test.mjs",
-    "validate": "node plugins/marketplace-kit/skills/marketplace-kit/scripts/validate-marketplace.mjs . && node scripts/validate-codex-plugins.mjs .",
+    "validate": "node plugins/plugin-inspector/skills/plugin-inspector/scripts/inspect.mjs .",
     "lint:prose": "node plugins/no-slop/skills/writing/scripts/sloplint.mjs --strict README.md plugins/*/README.md plugins/*/skills/*/SKILL.md",
     "lint:readmes": "node scripts/audit-readmes.mjs",
     "sync-versions": "node scripts/sync-versions.mjs",

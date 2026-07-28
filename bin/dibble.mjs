@@ -26,8 +26,9 @@ const TOOLS = {
   "zod-lint": "plugins/zod-first-tools/skills/zod-first-tools/scripts/lint-tools.mjs",
   "readme-audit": "plugins/readme-that-sells/skills/readme/scripts/audit-readme.mjs",
   "responsive-smells": "plugins/design-verify/skills/design-verify/scripts/responsive-smells.mjs",
-  "validate-marketplace": "plugins/marketplace-kit/skills/marketplace-kit/scripts/validate-marketplace.mjs",
-  "validate-codex": "scripts/validate-codex-plugins.mjs",
+  "plugin-inspector": "plugins/plugin-inspector/skills/plugin-inspector/scripts/inspect.mjs",
+  "validate-marketplace": "plugins/plugin-inspector/skills/plugin-inspector/scripts/inspect.mjs",
+  "validate-codex": "plugins/plugin-inspector/skills/plugin-inspector/scripts/inspect.mjs",
 };
 
 function printHelp() {

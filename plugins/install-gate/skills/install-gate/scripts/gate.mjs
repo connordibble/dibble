@@ -263,14 +263,24 @@ function main() {
     if (!results.length) process.exit(0);
 
     const reason = render(results);
-    const decision = hasBlock(results) ? "deny" : "ask";
-    process.stdout.write(JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: decision,
-        permissionDecisionReason: reason + "\n\nOverride: re-run with the concern addressed, or confirm the package name against the registry first.",
-      },
-    }));
+    const codex = typeof payload?.turn_id === "string";
+    const blocked = hasBlock(results);
+    const hookSpecificOutput = {
+      hookEventName: "PreToolUse",
+      ...(blocked ? {
+        permissionDecision: "deny",
+        permissionDecisionReason: reason + "\n\nRe-run with the concern addressed.",
+      } : codex ? {
+        // Codex currently parses `ask` but treats it as an unsupported output.
+        // Additional context preserves the warning without bypassing the host's
+        // normal permission flow. Claude Code supports `ask`, so keep its gate.
+        additionalContext: reason + "\n\nConfirm the package and source before proceeding.",
+      } : {
+        permissionDecision: "ask",
+        permissionDecisionReason: reason + "\n\nConfirm the package and source before proceeding.",
+      }),
+    };
+    process.stdout.write(JSON.stringify({ hookSpecificOutput }));
     process.exit(0);
   } else {
     const command = process.argv.slice(2).join(" ");

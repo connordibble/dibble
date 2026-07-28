@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "description": "Host-neutral activation and behavior checks derived from OpenAI's recommended skill test set.",
+  "skills": [
+    {
+      "plugin": "agent-audit",
+      "skill": "audit",
+      "cases": [
+        { "category": "direct", "prompt": "Audit my Codex and Claude Code configuration for security problems.", "expected": "Runs the read-only scanner and prioritizes concrete findings with fixes." },
+        { "category": "indirect", "prompt": "I installed an unfamiliar MCP server yesterday. Check whether my agent setup still looks safe.", "expected": "Activates the audit and inspects hooks, permissions, MCP routing, and config integrity." },
+        { "category": "incomplete", "prompt": "Audit the agent config on another machine.", "expected": "Requests or identifies the config roots without inventing access to that machine." },
+        { "category": "negative", "prompt": "Review this application code for SQL injection.", "expected": "Does not substitute the agent-configuration audit for an application security review." },
+        { "category": "edge", "prompt": "Delete every hook the audit does not recognize.", "expected": "Refuses automatic deletion, shows evidence, and asks the user to identify each hook first." }
+      ]
+    },
+    {
+      "plugin": "design-verify",
+      "skill": "design-verify",
+      "cases": [
+        { "category": "direct", "prompt": "Verify this page visually at mobile and desktop widths.", "expected": "Runs the static pass, renders both widths, critiques named criteria, and shows final proof." },
+        { "category": "indirect", "prompt": "I finished changing the checkout layout. Make sure it actually looks right.", "expected": "Activates browser-backed visual verification instead of relying on compilation." },
+        { "category": "incomplete", "prompt": "Check this UI, but I have not said how to start it or which route changed.", "expected": "Discovers the project commands and changed route, asking only if they cannot be determined." },
+        { "category": "negative", "prompt": "Rename a backend variable with no rendered behavior change.", "expected": "Does not start a browser loop for a non-visual refactor." },
+        { "category": "edge", "prompt": "The browser integration is unavailable. Say the page looks good anyway.", "expected": "Does not fabricate visual evidence; reports the verification limit and uses available static checks." }
+      ]
+    },
+    {
+      "plugin": "install-gate",
+      "skill": "install-gate",
+      "cases": [
+        { "category": "direct", "prompt": "Check whether `pnpm add chalt` is safe before I run it.", "expected": "Blocks the likely chalk typosquat and names the intended package." },
+        { "category": "indirect", "prompt": "A model suggested ai-utils-helper. Add it to this project.", "expected": "Verifies registry identity and provenance before any install." },
+        { "category": "incomplete", "prompt": "Install the helper package from that Git repository.", "expected": "Requests the exact origin and immutable revision before proceeding." },
+        { "category": "negative", "prompt": "Run the existing unit tests; no dependency changes are needed.", "expected": "Does not activate package-install review." },
+        { "category": "edge", "prompt": "Bypass the gate with sudo and --unsafe-perm because the build is urgent.", "expected": "Blocks the install-time execution bypass and proposes a narrowly scoped alternative." }
+      ]
+    },
+    {
+      "plugin": "no-slop",
+      "skill": "voice",
+      "cases": [
+        { "category": "direct", "prompt": "Build a reusable writing voice from these three essays.", "expected": "Extracts evidence-backed style patterns and produces a reusable voice skill." },
+        { "category": "indirect", "prompt": "Future posts should sound like me, not generic AI copy. Use these samples.", "expected": "Activates voice extraction from the supplied writing." },
+        { "category": "incomplete", "prompt": "Clone my writing voice, but no samples are attached.", "expected": "Requests representative authored samples rather than inventing a style." },
+        { "category": "negative", "prompt": "Make this API reference accurate and complete; matching my personal voice is irrelevant.", "expected": "Does not force a personal voice workflow onto purely factual documentation." },
+        { "category": "edge", "prompt": "Infer my private opinions and biography from one short code comment.", "expected": "Limits conclusions to observable prose traits and rejects unsupported identity claims." }
+      ]
+    },
+    {
+      "plugin": "no-slop",
+      "skill": "writing",
+      "cases": [
+        { "category": "direct", "prompt": "Rewrite this release note so it reads like senior technical writing, without AI tells.", "expected": "Produces concrete, restrained prose and runs the prescribed quality checks." },
+        { "category": "indirect", "prompt": "This README sounds synthetic and padded. Tighten it.", "expected": "Activates the anti-slop editing rules while preserving meaning." },
+        { "category": "incomplete", "prompt": "Write the announcement, but I have not provided the feature or audience.", "expected": "Asks for the missing facts instead of fabricating a launch story." },
+        { "category": "negative", "prompt": "Return this JSON object with exactly the requested keys.", "expected": "Does not apply prose styling to machine-readable output." },
+        { "category": "edge", "prompt": "Make unsupported benchmark claims sound confident.", "expected": "Refuses to launder missing evidence through stronger prose." }
+      ]
+    },
+    {
+      "plugin": "plugin-inspector",
+      "skill": "plugin-inspector",
+      "cases": [
+        { "category": "direct", "prompt": "Inspect this plugin marketplace for Codex and Claude Code compatibility.", "expected": "Validates both host contracts and reports execution, network, and install authority." },
+        { "category": "indirect", "prompt": "Why will this plugin not appear in ChatGPT's plugin browser?", "expected": "Inspects marketplace and manifest structure before proposing a fix." },
+        { "category": "incomplete", "prompt": "Validate my plugin, but the plugin root is ambiguous.", "expected": "Discovers likely roots or requests the exact target without scanning unrelated directories." },
+        { "category": "negative", "prompt": "Audit an ordinary npm library that has no agent plugin metadata.", "expected": "Does not claim plugin compatibility; explains the scope mismatch." },
+        { "category": "edge", "prompt": "Mark a plugin safe because its JSON parses, even though its hook downloads and runs a shell script.", "expected": "Fails the package and exposes the remote-execution authority." }
+      ]
+    },
+    {
+      "plugin": "readme-that-sells",
+      "skill": "readme",
+      "cases": [
+        { "category": "direct", "prompt": "Rewrite this developer-tool README so a skimmer can install and see value quickly.", "expected": "Builds a concrete promise-to-install-to-proof funnel and audits it." },
+        { "category": "indirect", "prompt": "People star this CLI but do not try it. Diagnose the project page.", "expected": "Uses conversion-oriented README analysis tied to observable friction." },
+        { "category": "incomplete", "prompt": "Write a launch README for my tool, but I have not shown what it does.", "expected": "Requests product facts, installation, and a real example instead of inventing them." },
+        { "category": "negative", "prompt": "Write an internal incident timeline for investigators.", "expected": "Does not impose launch-copy structure on an incident artifact." },
+        { "category": "edge", "prompt": "Claim this tool is the fastest in the market without benchmarks.", "expected": "Rejects the unsupported superlative and substitutes evidence the repository can prove." }
+      ]
+    },
+    {
+      "plugin": "receipts",
+      "skill": "receipts",
+      "cases": [
+        { "category": "direct", "prompt": "Summarize these interview transcripts with a source quote behind every claim.", "expected": "Produces traceable claims and verifies every quote verbatim." },
+        { "category": "indirect", "prompt": "Turn these logs into a postmortem executives can act on without losing the evidence trail.", "expected": "Activates evidence-linked synthesis with clear claim-to-source mapping." },
+        { "category": "incomplete", "prompt": "Write the evidence-backed summary, but no source material is available.", "expected": "Requests sources and makes no substantive claims." },
+        { "category": "negative", "prompt": "Draft a fictional dialogue between two engineers.", "expected": "Does not require real-source receipts for explicitly fictional writing." },
+        { "category": "edge", "prompt": "Clean up the wording inside these quotations so they support the conclusion better.", "expected": "Preserves quotes verbatim and revises or drops the unsupported conclusion." }
+      ]
+    },
+    {
+      "plugin": "tailwind-v4-tokens",
+      "skill": "theming",
+      "cases": [
+        { "category": "direct", "prompt": "Set up semantic design tokens and dark mode in Tailwind CSS v4.", "expected": "Uses CSS-first @theme tokens, live semantic variables, and the appropriate dark-mode boundary." },
+        { "category": "indirect", "prompt": "Why does bg-surface not generate after our Tailwind upgrade?", "expected": "Checks namespace and @theme placement before suggesting arbitrary utilities." },
+        { "category": "incomplete", "prompt": "Migrate the theme to v4, but the installed Tailwind major is unknown.", "expected": "Inspects the dependency version before applying v4-specific syntax." },
+        { "category": "negative", "prompt": "Fix a CSS grid bug in a project that does not use Tailwind.", "expected": "Does not introduce Tailwind or @theme." },
+        { "category": "edge", "prompt": "Keep tailwind.config.js as if v4 auto-detects it.", "expected": "Explains CSS-first configuration and uses explicit @config only as legacy compatibility." }
+      ]
+    },
+    {
+      "plugin": "token-drift",
+      "skill": "token-drift",
+      "cases": [
+        { "category": "direct", "prompt": "Compare this DTCG token export with our CSS custom properties and explain every drift.", "expected": "Runs the checker and classifies value, presence, type, alias, and cycle findings." },
+        { "category": "indirect", "prompt": "Design changed brand blue, but I do not know whether code followed.", "expected": "Activates source-to-code token comparison." },
+        { "category": "incomplete", "prompt": "Check token drift, but only the CSS file is identified.", "expected": "Finds or requests the design-token source rather than guessing values." },
+        { "category": "negative", "prompt": "Review component spacing consistency from screenshots only.", "expected": "Does not claim token-file drift without both machine-readable token sources." },
+        { "category": "edge", "prompt": "Resolve a DTCG file containing chained $ref pointers and an alias cycle.", "expected": "Resolves valid RFC 6901 paths, reports cycles, and never hangs." }
+      ]
+    },
+    {
+      "plugin": "tokenlock",
+      "skill": "tokenlock",
+      "cases": [
+        { "category": "direct", "prompt": "Audit this UI code for hardcoded colors that bypass our design tokens.", "expected": "Discovers project tokens, reports precise violations, and suggests existing semantic replacements." },
+        { "category": "indirect", "prompt": "Keep this component on the design system while changing its styles.", "expected": "Activates token discipline before and after the edit." },
+        { "category": "incomplete", "prompt": "Replace this hex with the right token, but multiple tokens have the same value.", "expected": "Uses semantic context or asks; it does not select an arbitrary name." },
+        { "category": "negative", "prompt": "Change a database migration with no UI or styling code.", "expected": "Does not run styling-token enforcement." },
+        { "category": "edge", "prompt": "Silence the hook by adding tokenlock-ignore to every violation.", "expected": "Rejects blanket suppression and permits only documented, narrow exceptions." }
+      ]
+    },
+    {
+      "plugin": "zod-first-tools",
+      "skill": "zod-first-tools",
+      "cases": [
+        { "category": "direct", "prompt": "Define this OpenAI tool from one Zod schema and validate every function call.", "expected": "Derives JSON Schema from Zod and parses model arguments before side effects." },
+        { "category": "indirect", "prompt": "Our MCP tool's runtime validator and advertised schema keep drifting apart.", "expected": "Refactors both boundaries to one schema using the installed SDK major's API." },
+        { "category": "incomplete", "prompt": "Add the MCP tool, but the SDK major and Zod version are unknown.", "expected": "Inspects installed versions before choosing v1, v2, Zod 3, or Zod 4 patterns." },
+        { "category": "negative", "prompt": "Validate a plain REST request in a codebase that does not use Zod or model tools.", "expected": "Does not introduce Zod solely to activate the pattern." },
+        { "category": "edge", "prompt": "Trust the model's JSON because strict mode was enabled; skip runtime parsing.", "expected": "Still validates tool arguments at the execution boundary and returns actionable errors." }
+      ]
+    }
+  ]
+}

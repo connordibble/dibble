@@ -31,6 +31,19 @@ Aliases are strings containing one token path:
 }
 ```
 
+The stable DTCG 2025.10 format also requires JSON Pointer references through
+`$ref`. Whole-token pointers participate in alias-chain and cycle handling;
+property pointers resolve the selected value using RFC 6901 escaping:
+
+```json
+{
+  "color": {
+    "brand": { "$type": "color", "$value": "#1d4ed8" },
+    "action": { "$type": "color", "$ref": "#/color/brand/$value" }
+  }
+}
+```
+
 The checker resolves aliases on both sides before comparing values. A cycle
 such as `a -> b -> a` produces `CYCLE` and fails.
 

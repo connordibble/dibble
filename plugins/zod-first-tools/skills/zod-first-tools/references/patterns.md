@@ -44,17 +44,46 @@ const args = GetWeather.parse(toolUseBlock.input);
 
 ```ts
 import OpenAI from "openai";
-import { zodFunction, zodResponseFormat } from "openai/helpers/zod";
 import { z } from "zod";
 
+const openai = new OpenAI();
 const GetWeather = z.object({ city: z.string(), units: z.enum(["c", "f"]) });
 
-// Tool definition:
-const tools = [zodFunction({ name: "get_weather", parameters: GetWeather })];
+// Responses API tool definition, derived from the same runtime validator:
+const tools = [{
+  type: "function" as const,
+  name: "get_weather",
+  description: "Look up current weather for a city",
+  parameters: z.toJSONSchema(GetWeather, { target: "draft-7" }),
+  strict: true,
+}];
 
-// Structured output:
+const response = await openai.responses.create({
+  model: "gpt-5.6",
+  input: "What is the weather in Chicago?",
+  tools,
+});
+
+for (const item of response.output) {
+  if (item.type === "function_call" && item.name === "get_weather") {
+    const args = GetWeather.parse(JSON.parse(item.arguments));
+    // Execute only with validated args, then return a function_call_output.
+  }
+}
+
+// Structured output through Responses API text.format:
 const Extraction = z.object({ sentiment: z.enum(["pos", "neg", "neutral"]), score: z.number() });
-const response_format = zodResponseFormat(Extraction, "extraction");
+const extractionResponse = await openai.responses.create({
+  model: "gpt-5.6",
+  input: "Classify: the release is solid.",
+  text: { format: {
+    type: "json_schema",
+    name: "extraction",
+    strict: true,
+    schema: z.toJSONSchema(Extraction, { target: "draft-7" }),
+  } },
+});
+const extraction = Extraction.parse(JSON.parse(extractionResponse.output_text));
 ```
 
 **Strict-mode gotcha.** OpenAI strict mode sets `additionalProperties: false`
@@ -72,6 +101,12 @@ the schema say what it means.
 
 ## MCP server tools
 
+Detect the installed SDK major before copying an API shape. The legacy v1
+package and current split packages both use `registerTool`, but accept
+different schema forms.
+
+### MCP TypeScript SDK v1 compatibility
+
 ```ts
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
@@ -80,15 +115,35 @@ const server = new McpServer({ name: "weather", version: "1.0.0" });
 
 const GetWeather = z.object({ city: z.string(), units: z.enum(["c", "f"]).default("c") });
 
-server.tool(
+server.registerTool(
   "get_weather",
-  "Look up current weather",
-  GetWeather.shape,           // the SDK derives inputSchema from this
+  {
+    description: "Look up current weather",
+    inputSchema: GetWeather.shape,
+  },
   async (args) => {
     const { city, units } = GetWeather.parse(args); // validate inbound args
     return { content: [{ type: "text", text: await lookup(city, units) }] };
   },
 );
+```
+
+### Current split MCP TypeScript SDK
+
+```ts
+import { McpServer } from "@modelcontextprotocol/server";
+import { z } from "zod";
+
+const server = new McpServer({ name: "weather", version: "1.0.0" });
+const GetWeather = z.object({ city: z.string(), units: z.enum(["c", "f"]).default("c") });
+
+server.registerTool("get_weather", {
+  description: "Look up current weather",
+  inputSchema: GetWeather, // v2 accepts the Standard Schema object directly
+}, async (args) => {
+  const { city, units } = GetWeather.parse(args);
+  return { content: [{ type: "text", text: await lookup(city, units) }] };
+});
 ```
 
 The same `GetWeather` object drives the advertised `inputSchema` and the

@@ -70,10 +70,10 @@
       "keywords": ["design", "qa", "responsive", "mobile-first", "frontend"]
     },
     {
-      "name": "marketplace-kit",
-      "source": "./marketplace-kit",
-      "description": "Build, validate, and maintain a Claude Code plugin marketplace: a skill on layout and versioning plus a validator that checks the same invariants the community-marketplace review enforces. Dogfooded on this catalog.",
-      "keywords": ["marketplace", "plugins", "claude-code", "validation", "publishing"]
+      "name": "plugin-inspector",
+      "source": "./plugin-inspector",
+      "description": "Inspect Claude Code and ChatGPT/Codex plugins before release: validates marketplaces, manifests, component paths, hooks, MCP/app wiring, and reports what each plugin can execute or connect to.",
+      "keywords": ["plugins", "marketplace", "claude-code", "codex", "chatgpt", "validation", "security"]
     }
   ]
 }

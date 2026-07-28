@@ -133,7 +133,7 @@ Run from the repo root. In the dibble monorepo these are the `pnpm` scripts;
 in a Tier B repo, replicate the equivalent.
 
 ```bash
-pnpm validate        # marketplace-kit validator: structure, versions, hook refs (monorepo)
+pnpm validate        # plugin-inspector: structure, authority, versions, hook refs (monorepo)
 pnpm lint:prose      # sloplint --strict on root/plugin READMEs and SKILL.md files
 pnpm lint:readmes    # root/plugin READMEs pass readme-that-sells' structural auditor
 pnpm test            # node --test across all plugin test suites
@@ -182,5 +182,5 @@ launch fuel — a reader runs one command and sees the tool work in 15 seconds.
 | Knowledge-only skill + references/ | `plugins/tailwind-v4-tokens`, `plugins/zod-first-tools` |
 | Structural auditor with pass/warn/fail | `plugins/readme-that-sells` |
 | Static source-pattern linter | `plugins/design-verify`, `plugins/zod-first-tools` |
-| Marketplace/repo validator | `plugins/marketplace-kit` |
+| Marketplace/repo inspector | `plugins/plugin-inspector` |
 | npm release pipeline (Tier B) | the `dibble` repo root, or `zod-ai-tool` / `agent-readiness-kit` on GitHub |

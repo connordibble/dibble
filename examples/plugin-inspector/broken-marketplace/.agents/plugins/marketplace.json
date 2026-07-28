@@ -1,0 +1,12 @@
+{
+  "name": "broken-example",
+  "interface": { "displayName": "Broken Example" },
+  "plugins": [
+    {
+      "name": "greeter",
+      "source": { "source": "local", "path": "./plugins/greeter" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}

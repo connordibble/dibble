@@ -72,7 +72,8 @@ export function loadConfig(startDir = process.cwd()) {
 }
 
 function isTokenNode(value) {
-  return value && typeof value === "object" && Object.hasOwn(value, "$value");
+  return value && typeof value === "object" &&
+    (Object.hasOwn(value, "$value") || Object.hasOwn(value, "$ref"));
 }
 
 function ignoredByExtension(node, inheritedIgnore) {
@@ -90,6 +91,22 @@ export function parseDtcg(text) {
   const json = JSON.parse(text);
   const tokens = new Map();
 
+  function decodePointer(pointer) {
+    if (typeof pointer !== "string" || !pointer.startsWith("#/")) return null;
+    return pointer.slice(2).split("/").map((part) => part.replace(/~1/g, "/").replace(/~0/g, "~"));
+  }
+
+  function pointerValue(pointer) {
+    const parts = decodePointer(pointer);
+    if (!parts) return undefined;
+    let current = json;
+    for (const part of parts) {
+      if (current === null || current === undefined || !Object.hasOwn(current, part)) return undefined;
+      current = current[part];
+    }
+    return current;
+  }
+
   function walk(node, path, inheritedType, inheritedIgnore) {
     if (!node || typeof node !== "object" || Array.isArray(node)) return;
     const type = node.$type ?? inheritedType;
@@ -98,11 +115,16 @@ export function parseDtcg(text) {
     if (isTokenNode(node)) {
       const key = path.join(".");
       if (!key) return;
-      const value = stableStringify(node.$value);
+      const pointerParts = decodePointer(node.$ref);
+      const completeTokenRef = pointerParts?.at(-1) === "$value"
+        ? pointerParts.slice(0, -1).join(".")
+        : null;
+      const rawValue = Object.hasOwn(node, "$value") ? node.$value : pointerValue(node.$ref);
+      const value = stableStringify(rawValue);
       tokens.set(key, {
         value,
         type,
-        alias: detectDtcgAlias(node.$value),
+        alias: detectDtcgAlias(node.$value) ?? completeTokenRef,
         ignored,
       });
       return;

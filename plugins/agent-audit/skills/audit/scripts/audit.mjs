@@ -3,7 +3,8 @@
  * agent-audit — hygiene scanner for your coding-agent configuration.
  *
  * Checks the places a compromised package or a careless afternoon actually
- * touches: hook definitions, permission grants, MCP server configs, and the
+ * touches: Claude Code and Codex hook definitions, permission grants, MCP
+ * server configs, and the
  * file permissions on the configs themselves. Every check maps to a
  * documented attack pattern (SessionStart re-execution, MCP rerouting,
  * curl|bash payloads, plaintext transports, inline secrets).
@@ -49,8 +50,8 @@ const OBFUSCATION = /\bbase64\b.*(-d|--decode|-D)|\batob\s*\(/;
 const TMP_EXEC = /(^|[\s"'=])\/(?:var\/)?tmp\//;
 const INLINE_EVAL = /\b(node\s+-e|sh\s+-c|bash\s+-c|eval)\b/;
 
-// hooks.json supports the exec form ({ command, args: [...] }), which is how
-// this catalog's own plugins wire their hooks. Scanning h.command alone lets
+// Some hook formats support an exec form ({ command, args: [...] }). Scanning
+// h.command alone lets
 // a payload hide in args — e.g. { command: "bash", args: ["-c", "curl ... | sh"] }
 // evades every pattern below if only "bash" is examined. Join them into the
 // same effective string a shell would see.
@@ -130,6 +131,82 @@ function auditSettingsFile(path, label) {
   }
 }
 
+// Codex uses TOML for permissions and MCP servers. This intentionally parses
+// only the small, security-relevant subset we inspect; it is not a general
+// TOML implementation and never rewrites the file.
+function tomlValue(raw) {
+  const value = raw.trim().replace(/\s+#.*$/, "");
+  if (value.startsWith('"')) {
+    try { return JSON.parse(value); } catch { return value.slice(1, -1); }
+  }
+  if (value.startsWith("[") && value.endsWith("]")) {
+    const items = value.slice(1, -1).match(/"(?:\\.|[^"\\])*"|'[^']*'|[^,]+/g) ?? [];
+    return items.map((item) => tomlValue(item));
+  }
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return value;
+}
+
+function auditCodexConfig(path, label) {
+  if (!existsSync(path)) return;
+  let text;
+  try { text = readFileSync(path, "utf8"); } catch { return; }
+
+  let section = "";
+  const root = {};
+  const servers = {};
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const header = line.match(/^\[\[?([^\]]+)\]\]?$/);
+    if (header) { section = header[1]; continue; }
+    const assignment = line.match(/^([A-Za-z0-9_-]+)\s*=\s*(.+)$/);
+    if (!assignment) continue;
+    const [, key, rawValue] = assignment;
+    const value = tomlValue(rawValue);
+
+    if (!section) root[key] = value;
+
+    const mcp = section.match(/^mcp_servers\.([^.]+)(?:\.(env))?$/);
+    if (mcp) {
+      const server = servers[mcp[1]] ??= {};
+      if (mcp[2] === "env") (server.env ??= {})[key] = value;
+      else server[key] = value;
+    }
+
+    const hook = section.match(/^hooks\.([^.]+)\.hooks$/);
+    if (hook && key === "command" && typeof value === "string") {
+      auditHookCommand(value, label, hook[1]);
+      if (hook[1] === "SessionStart") {
+        add("info", `${label} (SessionStart hook)`, `runs on every session start: ${trim(value)}`,
+          "SessionStart is a re-execution vector; confirm you added this hook yourself");
+      }
+    }
+  }
+
+  auditMcpServers(servers, label);
+  if (root.sandbox_mode === "danger-full-access" && root.approval_policy === "never") {
+    add("critical", label, "danger-full-access is combined with approval_policy = never",
+      "restore workspace-write/read-only sandboxing or an approval policy before running agents");
+  } else {
+    if (root.sandbox_mode === "danger-full-access") {
+      add("warn", label, "sandbox_mode is danger-full-access", "prefer workspace-write unless broad host access is required");
+    }
+    if (root.approval_policy === "never") {
+      add("warn", label, "approval_policy is never", "use a prompting approval policy for commands outside the sandbox");
+    }
+  }
+  if (SECRET_SHAPES.test(text)) {
+    add("warn", label, "credential-like value stored inline in Codex config",
+      "reference an environment variable or secret store instead of committing credentials to config");
+  }
+  if (isWorldWritable(path)) {
+    add("critical", label, "Codex config is world-writable",
+      `chmod o-w ${path} — hooks, permissions, and MCP routing can be rewritten locally`);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Check 2: MCP server configurations
 // ---------------------------------------------------------------------------
@@ -191,6 +268,8 @@ function auditMarketplaces() {
 auditSettingsFile(join(HOME, ".claude", "settings.json"), "~/.claude/settings.json");
 auditSettingsFile(join(PROJECT, ".claude", "settings.json"), ".claude/settings.json");
 auditSettingsFile(join(PROJECT, ".claude", "settings.local.json"), ".claude/settings.local.json");
+auditSettingsFile(join(HOME, ".codex", "hooks.json"), "~/.codex/hooks.json");
+auditSettingsFile(join(PROJECT, ".codex", "hooks.json"), ".codex/hooks.json");
 
 const rootCfg = readJson(join(HOME, ".claude.json"));
 if (rootCfg) {
@@ -205,6 +284,9 @@ if (rootCfg) {
 }
 const projMcp = readJson(join(PROJECT, ".mcp.json"));
 if (projMcp) auditMcpServers(projMcp.mcpServers ?? projMcp, ".mcp.json");
+
+auditCodexConfig(join(HOME, ".codex", "config.toml"), "~/.codex/config.toml");
+auditCodexConfig(join(PROJECT, ".codex", "config.toml"), ".codex/config.toml");
 
 auditMarketplaces();
 

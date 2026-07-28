@@ -7,9 +7,9 @@ import { evaluate, parseInstall, levenshtein } from "../skills/install-gate/scri
 
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "..", "skills", "install-gate", "scripts", "gate.mjs");
 
-function hook(command) {
+function hook(command, { codex = false } = {}) {
   const r = spawnSync("node", [SCRIPT, "--hook"], {
-    input: JSON.stringify({ hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command } }),
+    input: JSON.stringify({ hook_event_name: "PreToolUse", tool_name: "Bash", tool_input: { command }, ...(codex ? { turn_id: "turn_123" } : {}) }),
     encoding: "utf8",
   });
   return { exit: r.status, decision: r.stdout ? JSON.parse(r.stdout).hookSpecificOutput : null };
@@ -91,6 +91,12 @@ test("slopsquat-shaped generic name asks for verification", () => {
   const { decision } = hook("npm install ai-utils-helper");
   assert.equal(decision.permissionDecision, "ask");
   assert.match(decision.permissionDecisionReason, /hallucinated names|confirm it exists/);
+});
+
+test("Codex VERIFY findings use additional context because ask is unsupported", () => {
+  const { decision } = hook("npm install ai-utils-helper", { codex: true });
+  assert.equal(decision.permissionDecision, undefined);
+  assert.match(decision.additionalContext, /hallucinated names|confirm it exists/);
 });
 
 test("lifecycle-script flags are blocked", () => {

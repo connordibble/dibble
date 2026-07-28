@@ -78,7 +78,8 @@ project root to change that:
 }
 ```
 
-DTCG aliases like `{color.brand.500}` and CSS aliases like
+DTCG aliases like `{color.brand.500}`, stable DTCG 2025.10 JSON Pointer
+references like `{ "$ref": "#/color/brand/500/$value" }`, and CSS aliases like
 `var(--color-brand-500)` are resolved before values are compared. Cycles fail
 instead of hanging. Add `$extensions: { "token-drift": "ignore" }` to a DTCG
 token or `/* token-drift-ignore */` on a CSS variable line to suppress that

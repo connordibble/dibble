@@ -3,10 +3,10 @@
 **A malicious npm package can add a hook to your agent that re-runs on every
 session. Would you notice?**
 
-agent-audit is a read-only scanner for the configuration your coding agent
-trusts: hooks, permission grants, MCP server definitions, and the file
-permissions on the configs themselves. Every check maps to a documented
-attack pattern, not a vibe.
+agent-audit is a read-only scanner for the Claude Code and Codex configuration
+your coding agent trusts: hooks, permission grants, MCP server definitions,
+and the file permissions on the configs themselves. Every check maps to a
+documented attack pattern, not a vibe.
 
 ```
 $ /agent-audit:audit
@@ -42,9 +42,12 @@ is `commands/audit.md`.)
 | Area              | Critical                                              | Warn                                        |
 | ----------------- | ----------------------------------------------------- | ------------------------------------------- |
 | Hooks             | `curl\|bash`, base64 payloads, world-writable scripts | temp-dir execution, giant inline scripts    |
-| Permissions       | `bypassPermissions` as default                        | blanket `Bash`, pre-approved `rm -rf`/pipes |
+| Permissions       | Claude `bypassPermissions`; Codex full access + no approvals | blanket shell grants; either unsafe Codex setting alone |
 | MCP servers       | plaintext http endpoints, binaries from `/tmp`        | inline credentials in `env`                 |
-| Config integrity  | world-writable `~/.claude.json` or settings files     | —                                           |
+| Config integrity  | world-writable Claude/Codex settings or config files  | —                                           |
+
+The scanner reads Claude's user/project settings and `.mcp.json`, plus Codex's
+user/project `hooks.json` and `config.toml` files.
 
 Informational findings (SessionStart hooks, registered marketplaces, unpinned
 `npx` servers) are inventory you confirm, not accusations. The tool presents

@@ -89,6 +89,28 @@ test("a DTCG alias resolves before comparison", () => {
   assert.equal(r.status, 0, r.stdout + r.stderr);
 });
 
+test("a DTCG JSON Pointer whole-token reference resolves before comparison", () => {
+  const source = JSON.stringify({
+    color: {
+      brand: { $type: "color", $value: "#1d4ed8" },
+      action: { $type: "color", $ref: "#/color/brand/$value" },
+    },
+  });
+  const css = ":root { --color-brand: #1d4ed8; --color-action: var(--color-brand); }";
+  const r = run(source, css);
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+});
+
+test("a DTCG JSON Pointer property reference resolves RFC 6901 escapes", () => {
+  const source = JSON.stringify({
+    "brand/color": { base: { $type: "color", $value: { hex: "#1d4ed8" }, $extensions: { "token-drift": "ignore" } } },
+    extracted: { $type: "color", $ref: "#/brand~1color/base/$value/hex" },
+  });
+  const css = ":root { --extracted: #1d4ed8; }";
+  const r = run(source, css);
+  assert.equal(r.status, 0, r.stdout + r.stderr);
+});
+
 test("an alias cycle reports CYCLE and does not hang", () => {
   const r = run(
     json({

@@ -27,9 +27,10 @@ what it finds, then verify visually.
 
 ## The verification loop
 
-Use the environment's browser-preview tools (in Claude Code, the `preview_*`
-tools; elsewhere, a Playwright/Puppeteer screenshot). Never ask the user to
-check manually; verify and show proof.
+Use the browser surface available in the host: Codex's browser/computer tools,
+Claude Code's Chrome integration or Desktop preview, or a browser MCP such as
+Playwright. Never invent a `preview_*` tool that is not present, and never ask
+the user to perform verification the agent can do; capture and show proof.
 
 1. **Render.** Ensure the dev server is running and navigate to the changed
    view. Reload if hot-reload didn't already.

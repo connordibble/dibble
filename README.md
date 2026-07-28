@@ -58,13 +58,12 @@ working directory.
 npx dibble sloplint --strict README.md docs
 npx dibble tokenlock src
 npx dibble token-drift path/to/figma.tokens.json path/to/globals.css
-npx dibble validate-marketplace .
-npx dibble validate-codex .
+npx dibble plugin-inspector .
 ```
 
 `npx dibble --help` lists every tool (also `agent-audit`, `install-gate`,
 `token-drift`, `receipts`, `zod-lint`, `readme-audit`, `responsive-smells`,
-`validate-codex`).
+and compatibility aliases for the previous marketplace validators).
 Each tool also publishes its own bin (`dibble-tokenlock`,
 `dibble-token-drift`, `dibble-sloplint`, ...) for when only one is installed as
 a project dependency rather than run ad hoc.
@@ -87,7 +86,7 @@ finds the issue.
 | [tailwind-v4-tokens](plugins/tailwind-v4-tokens) | The Tailwind v4 theming knowledge behind the enforcement: `@theme`, token-first dark mode, the spacing-shadow trap | Skill |
 | [zod-first-tools](plugins/zod-first-tools) | Build LLM tool definitions and MCP servers from one Zod schema; linter flags a hand-written schema beside it | Skill + linter + CI |
 | [readme-that-sells](plugins/readme-that-sells) | README and launch copy built around the conversion funnel; auditor measures time-to-install and time-to-example | Skill + auditor + CI |
-| [marketplace-kit](plugins/marketplace-kit) | Build and validate a plugin marketplace; catches the version and layout bugs that break installs | `/marketplace-kit:validate` command + validator |
+| [plugin-inspector](plugins/plugin-inspector) | Validates Claude Code and ChatGPT/Codex plugin packages, then reports executable and network authority | `/plugin-inspector:inspect` command + validator + CI |
 
 ## The idea behind the catalog
 
@@ -102,7 +101,7 @@ that:
 - **Safety:** install-gate and agent-audit cover the two agent supply-chain
   surfaces (what gets installed, and what rewrote your config).
 - **Craft for builders:** zod-first-tools, readme-that-sells, and
-  marketplace-kit are the tools you use to ship the rest.
+  plugin-inspector are the tools you use to ship the rest.
 
 A recurring pattern: put the deterministic logic in a script inside the skill,
 then have the plugin's hook call it. So the rule that governs your agent is the
@@ -113,11 +112,13 @@ what the pipeline enforces.
 
 This repo holds itself to what it sells. On every push, CI runs:
 
-- **marketplace-kit** validates the Claude Code catalog (structure, versions,
-  hook references) — the plugin validating its own marketplace
-- **validate-codex-plugins** validates the Codex sidecar marketplace and every
-  `.codex-plugin/plugin.json`
-- **90+ tests** across every script (`node --test`)
+- **plugin-inspector** validates both marketplace formats, every local plugin
+  manifest, component paths, and declared authority — the plugin inspecting its
+  own package
+- **116 tests** across every deterministic script (`node --test`)
+- **60 behavioral cases** cover direct and indirect activation, missing
+  context, non-activation, and unsafe edges for all 12 skills; plugin-inspector
+  fails if a skill loses coverage
 - **sloplint** (`--strict`) on the root README, plugin READMEs, and every
   catalog SKILL.md
 - the root README and every plugin README pass **readme-that-sells**' own
