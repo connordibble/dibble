@@ -1,3 +1,15 @@
+# [1.2.0](https://github.com/connordibble/dibble/compare/v1.1.1...v1.2.0) (2026-07-28)
+
+
+### Bug Fixes
+
+* enable automatic hook enforcement on Codex for tokenlock and install-gate ([f4ba85e](https://github.com/connordibble/dibble/commit/f4ba85e32f09c0d17f2a2ba4db782fce0ce1c57c))
+
+
+### Features
+
+* add cross-host plugin inspection and skill evals ([44568c4](https://github.com/connordibble/dibble/commit/44568c4582ca912dba5dff8a982a42e2f63b5947))
+
 ## [1.1.1](https://github.com/connordibble/dibble/compare/v1.1.0...v1.1.1) (2026-07-04)
 
 
