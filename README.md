@@ -167,7 +167,8 @@ This repository is governed by the plugins it ships:
   coverage floor, currently 95.61%, plus focused branch floors for the three
   security-oriented checkers.
 - 60 behavioral cases cover direct activation, indirect activation, missing
-  context, non-activation, and unsafe edges for all 12 skills.
+  context, non-activation, and unsafe edges for all 12 skills across 11
+  plugins. `no-slop` packages separate writing and voice skills.
 - `sloplint --strict` checks the root README, plugin READMEs, and every skill.
 - `readme-that-sells` audits the root README and every plugin README.
 
