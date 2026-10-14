@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/connordibble/dibble/compare/v1.2.1...v1.3.0) (2026-10-14)
+
+
+### Features
+
+* **agent-audit:** audit every hook type and installed plugins ([7205392](https://github.com/connordibble/dibble/commit/7205392bf90067096a1cccbf8e3a6a3090850ff6))
+
 ## [1.2.1](https://github.com/connordibble/dibble/compare/v1.2.0...v1.2.1) (2026-07-28)
 
 

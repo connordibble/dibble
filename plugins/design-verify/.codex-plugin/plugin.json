@@ -1,6 +1,6 @@
 {
   "name": "design-verify",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "UI verification workflow with a responsive-smell linter and screenshot-loop review guidance.",
   "author": {
     "name": "Connor Dibble",
