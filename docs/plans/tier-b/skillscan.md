@@ -55,7 +55,8 @@ skillscan/
 external repo (`{ "source": "github", "repo": "connordibble/skillscan" }`) so
 dibble users discover it, while it lives and releases on its own.
 
-Release/env: same as dibble — `release` GitHub environment holds `NPM_TOKEN`,
+Release/env: same as dibble — npm trusted publishing bound to the repo,
+`ci.yml`, and the `release` GitHub environment (no stored npm token),
 provenance on. First commit sets git identity (conventions §0). Run the
 identity verification before first push.
 
@@ -130,7 +131,7 @@ pattern) is the highest-priority report class.
 ## Definition of done (Tier B additions to conventions §7)
 - [ ] Own repo created, MIT, README passes the auditor (vendor a copy of the
       readme-audit script or run `npx dibble readme-audit` against it)
-- [ ] CI green on the matrix; release job configured; `release` env + NPM_TOKEN
+- [ ] CI green on the matrix; release job configured; `release` env + npm trusted publisher
 - [ ] npm name confirmed; `1.0.0`; provenance
 - [ ] Listed in the dibble marketplace as an external-source plugin
 - [ ] Identity verification (conventions §0) clean before first push

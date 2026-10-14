@@ -58,8 +58,10 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     # Binds the job to the `release` environment. Configure its protection rules
-    # (restrict deployments to `main`, hold NPM_TOKEN as an environment secret,
-    # optional required reviewer) in repo Settings → Environments → release.
+    # (restrict deployments to `main`, optional required reviewer) in repo
+    # Settings → Environments → release. npm publishes through trusted
+    # publishing: the npm package trusts this repo, workflow file ci.yml, and
+    # the `release` environment, so no npm token is stored anywhere.
     environment:
       name: release
       url: https://www.npmjs.com/package/dibble
@@ -67,7 +69,7 @@ jobs:
       contents: write # create releases, tags, and the changelog commit
       issues: write # comment on released issues
       pull-requests: write # comment on released PRs
-      id-token: write # npm publish with provenance
+      id-token: write # npm trusted publishing (OIDC) and provenance
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
@@ -88,7 +90,6 @@ jobs:
         run: pnpm exec semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'
           GIT_AUTHOR_NAME: Connor Dibble
           GIT_AUTHOR_EMAIL: dibbleconnor@gmail.com
