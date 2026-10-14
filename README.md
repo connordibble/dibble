@@ -163,8 +163,8 @@ This repository is governed by the plugins it ships:
 
 - `plugin-inspector` validates both marketplace formats, every local manifest,
   component paths, evaluation coverage, and declared authority.
-- 148 tests run across every deterministic script. CI enforces a 95% line
-  coverage floor, currently 95.61%, plus focused branch floors for the three
+- 165 tests run across every deterministic script. CI enforces a 95% line
+  coverage floor, currently 96.10%, plus focused branch floors for the three
   security-oriented checkers.
 - 60 behavioral cases cover direct activation, indirect activation, missing
   context, non-activation, and unsafe edges for all 12 skills across 11

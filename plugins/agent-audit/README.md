@@ -41,16 +41,30 @@ is `commands/audit.md`.)
 
 | Area              | Critical                                              | Warn                                        |
 | ----------------- | ----------------------------------------------------- | ------------------------------------------- |
-| Hooks             | `curl\|bash`, base64 payloads, world-writable scripts | temp-dir execution, giant inline scripts    |
+| Hooks             | `curl\|bash`, base64 payloads, world-writable scripts; plaintext `http` hooks to remote hosts; invisible Unicode in hook prompts; agent hooks told to download and run code | temp-dir execution, giant inline scripts; `http` hooks that send payloads off the machine; credentials in hook URLs, headers, or inputs; hook prompts that auto-approve tool calls |
 | Permissions       | Claude `bypassPermissions`; Codex full access + no approvals | blanket shell grants; either unsafe Codex setting alone |
 | MCP servers       | plaintext http endpoints, binaries from `/tmp`        | inline credentials in `env`                 |
 | Config integrity  | world-writable Claude/Codex settings or config files  | —                                           |
+| Installed plugins | the hook checks above, applied to bundled hooks and monitors; world-writable plugin hooks files or scripts; plaintext MCP endpoints a plugin ships | a plugin `bin/` that shadows `git`, `node`, `curl`, and similar commands |
 
 The scanner reads Claude's user/project settings and `.mcp.json`, plus Codex's
-user/project `hooks.json` and `config.toml` files.
+user/project `hooks.json` and `config.toml` files. It also opens every
+installed plugin under `~/.claude/plugins` (the version cache, in-place
+installs from `installed_plugins.json`, and plugins synced from claude.ai) and
+`~/.codex/plugins/cache`, and audits each one's hooks, monitors, MCP servers,
+and `bin/` executables. Findings name the plugin, for example
+`plugin tokenlock@dibble 1.2.1 (PostToolUse hook)`. Installed plugins are
+audited whether or not they are enabled, because any project settings file can
+enable one.
 
-Informational findings (SessionStart hooks, registered marketplaces, unpinned
-`npx` servers) are inventory you confirm, not accusations. The tool presents
+Every hook handler type is inspected: `command`, `http`, `mcp_tool`,
+`prompt`, and `agent`. A handler the scanner can't parse is reported, never
+skipped.
+
+Informational findings (plugin monitors and `bin/` executables; hooks on lifecycle events such as `SessionStart`,
+`ConfigChange`, `FileChanged`, or `WorktreeCreate`; `mcp_tool` and `agent`
+hooks; registered marketplaces; unpinned `npx` servers) are inventory you
+confirm, not accusations. The tool presents
 them as "did you add this?" because the scanner can't know.
 
 ## Design principles
@@ -60,7 +74,7 @@ them as "did you add this?" because the scanner can't know.
   risk.
 - **Every finding maps to a known attack.** No cargo-cult rules. The
   informational tier exists precisely so legitimate-but-scary patterns
-  (SessionStart hooks are popular *and* the persistence vector) aren't cried
+  (lifecycle hooks are popular *and* the persistence vector) aren't cried
   wolf as critical.
 - **Findings over category.** Exit codes (2 critical / 1 warn / 0 clean) and
   `--json` make it a CI check for anyone tracking agent config in dotfiles.

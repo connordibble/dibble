@@ -3,11 +3,12 @@
  * agent-audit — hygiene scanner for your coding-agent configuration.
  *
  * Checks the places a compromised package or a careless afternoon actually
- * touches: Claude Code and Codex hook definitions, permission grants, MCP
- * server configs, and the
+ * touches: Claude Code and Codex hook definitions (command, http, mcp_tool,
+ * prompt, and agent handlers), permission grants, MCP server configs, and the
  * file permissions on the configs themselves. Every check maps to a
- * documented attack pattern (SessionStart re-execution, MCP rerouting,
- * curl|bash payloads, plaintext transports, inline secrets).
+ * documented attack pattern (lifecycle-hook re-execution, MCP rerouting,
+ * curl|bash payloads, hook payload exfiltration, hidden prompt instructions,
+ * plaintext transports, inline secrets).
  *
  *   node audit.mjs                       # audit ~ and the current project
  *   node audit.mjs --json                # machine-readable
@@ -17,8 +18,8 @@
  * Zero dependencies. Read-only: this tool never modifies anything.
  */
 
-import { readFileSync, existsSync, statSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync, existsSync, statSync, readdirSync, realpathSync } from "node:fs";
+import { join, resolve, sep } from "node:path";
 import { homedir } from "node:os";
 
 const args = process.argv.slice(2);
@@ -32,6 +33,8 @@ const AS_JSON = args.includes("--json");
 
 const findings = [];
 const add = (severity, file, issue, fix) => findings.push({ severity, file, issue, fix });
+
+const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 
 function readJson(path) {
   try { return JSON.parse(readFileSync(path, "utf8")); } catch { return null; }
@@ -66,8 +69,8 @@ function fullHookCommand(h) {
   return args ? `${h.command} ${args}` : h.command;
 }
 
-function auditHookCommand(cmd, sourceFile, event) {
-  const where = `${sourceFile} (${event} hook)`;
+function auditHookCommand(cmd, sourceFile, event, kind = "hook") {
+  const where = `${sourceFile} (${event} ${kind})`;
   const remoteExec = REMOTE_EXEC.some((pattern) => pattern.test(cmd));
   if (remoteExec) {
     add("critical", where, `hook downloads and executes remote code: ${trim(cmd)}`,
@@ -98,25 +101,181 @@ function auditHookCommand(cmd, sourceFile, event) {
 
 const trim = (s) => (s.length > 90 ? s.slice(0, 87) + "…" : s).replace(/\s+/g, " ");
 
+// Events that fire on session, config, or filesystem activity rather than on
+// a tool call the user watches. Any handler here runs without a visible
+// trigger, which is what persistence needs.
+const LIFECYCLE_EVENTS = {
+  SessionStart: "runs on every session start",
+  Setup: "runs on every init or maintenance run",
+  InstructionsLoaded: "runs whenever CLAUDE.md or rules files load",
+  ConfigChange: "runs whenever a config file changes, so it can undo an edit you just made",
+  FileChanged: "runs whenever a watched file changes on disk",
+  CwdChanged: "runs whenever the working directory changes",
+  DirectoryAdded: "runs whenever a directory is added to the session",
+  WorktreeCreate: "replaces git worktree creation, so it decides where new worktrees come from",
+  WorktreeRemove: "runs whenever a hook-created worktree is removed",
+  PreCompact: "runs before every context compaction",
+  PostCompact: "runs after every context compaction",
+  PreModelSwitch: "runs before every model switch and can block it",
+  PostModelSwitch: "runs after every model change",
+  SessionEnd: "runs when every session ends",
+};
+
+function lifecycleCallout(label, event, summary) {
+  const what = LIFECYCLE_EVENTS[event];
+  if (!what) return;
+  add("info", `${label} (${event} hook)`, `${what}: ${trim(summary)}`,
+    `${event} fires without a tool call, which makes it a re-execution vector malware uses; confirm you added this yourself`);
+}
+
+// Tag characters smuggle invisible ASCII; bidi controls reorder what a reviewer
+// sees; zero-width spaces split keywords. Zero-width joiner is left out
+// because emoji sequences use it legitimately.
+const HIDDEN_TEXT = /[\u{E0000}-\u{E007F}‪-‮⁦-⁩​‌⁠﻿]/u;
+const ENCODED_BLOB = /[A-Za-z0-9+/]{120,}={0,2}/;
+const AUTO_APPROVE = /\b(?:always|unconditionally|automatically)\s+(?:allow|approve|permit|accept)\b/i;
+const PERMISSION_EVENTS = new Set(["PreToolUse", "PermissionRequest"]);
+
+function isLoopback(hostname) {
+  return hostname === "localhost" || hostname === "[::1]" || /^127\.\d+\.\d+\.\d+$/.test(hostname);
+}
+
+function auditHttpHook(h, where, event) {
+  if (typeof h.url !== "string") {
+    add("info", where, "could not inspect http hook: url is missing or not a string",
+      "set url to the endpoint this hook posts to, or remove the hook");
+    return null;
+  }
+  let url;
+  try { url = new URL(h.url); } catch {
+    add("info", where, `could not inspect http hook url: ${trim(h.url)}`,
+      "use an absolute https URL, or review this hook manually");
+    return null;
+  }
+  const envVars = Array.isArray(h.allowedEnvVars) ? h.allowedEnvVars.filter((v) => typeof v === "string") : [];
+  const forwards = envVars.length ? ` and forwards ${envVars.join(", ")} in its headers` : "";
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    add("warn", where, `http hook uses unsupported scheme ${url.protocol}: ${trim(h.url)}`,
+      "point the hook at an http or https endpoint you control, or remove it");
+  } else if (!isLoopback(url.hostname)) {
+    if (url.protocol === "http:") {
+      add("critical", where, `http hook sends every ${event} payload over plaintext http to ${url.host}${forwards}`,
+        "hook payloads carry tool inputs, file paths, and prompt text; use https, or remove the hook");
+    } else {
+      add("warn", where, `http hook sends every ${event} payload to ${url.host}${forwards}`,
+        "hook payloads carry tool inputs, file paths, and prompt text; confirm you trust this endpoint");
+    }
+  } else {
+    add("info", where, `http hook posts every ${event} payload to a local service at ${url.host}`,
+      "any local process can bind this port; confirm which service is meant to receive it");
+  }
+  const literal = [h.url, ...Object.values(isObject(h.headers) ? h.headers : {})];
+  if (url.username || url.password || literal.some((v) => typeof v === "string" && SECRET_SHAPES.test(v))) {
+    add("warn", where, "credential stored inline in http hook url or headers",
+      "reference an environment variable through allowedEnvVars instead of writing the secret into config");
+  }
+  return `POST ${h.url}`;
+}
+
+function auditMcpToolHook(h, where, event) {
+  if (typeof h.server !== "string" || typeof h.tool !== "string" || !h.server || !h.tool) {
+    add("info", where, "could not inspect mcp_tool hook: server or tool is missing",
+      "name the MCP server and tool this hook calls, or remove the hook");
+    return null;
+  }
+  add("info", where, `hook calls MCP tool ${h.server}/${h.tool} on every ${event}`,
+    "the call can carry tool arguments and file paths to that server; confirm the server is one you configured");
+  if (SECRET_SHAPES.test(JSON.stringify(h.input ?? {}))) {
+    add("warn", where, "credential stored inline in mcp_tool hook input",
+      "pass secrets through the MCP server's own configuration instead of the hook input");
+  }
+  return `MCP tool ${h.server}/${h.tool}`;
+}
+
+// prompt hooks ask a model for a one-turn decision; agent hooks spawn a
+// subagent that can use tools. Both carry instructions, so the prompt text is
+// the payload to review.
+function auditPromptHook(h, where, event) {
+  if (typeof h.prompt !== "string") {
+    add("info", where, `could not inspect ${h.type} hook: prompt is missing or not a string`,
+      "set the prompt this hook sends, or remove the hook");
+    return null;
+  }
+  const text = h.prompt;
+  const tools = h.type === "agent";
+  if (HIDDEN_TEXT.test(text)) {
+    add("critical", where, `${h.type} hook prompt contains invisible Unicode that can hide instructions`,
+      "rewrite the prompt in plain text and review what the hidden characters spelled");
+  }
+  const pipesToShell = REMOTE_EXEC.some((pattern) => pattern.test(text));
+  if (pipesToShell || /\b(?:curl|wget)\b[\s\S]*\b(?:sh|bash|zsh|node|python3?|eval)\b/.test(text)) {
+    // Only an exact download-and-execute shape is critical; prose that merely
+    // mentions both a fetch and an interpreter is a review prompt.
+    add(tools && pipesToShell ? "critical" : "warn", where,
+      `${h.type} hook prompt asks the model to fetch and run code: ${trim(text)}`,
+      tools
+        ? "an agent hook can act on this with real tools; remove it unless you wrote it and vendor the script locally"
+        : "a hook prompt has no reason to mention downloading and running code; review or remove it");
+  }
+  if (OBFUSCATION.test(text) || ENCODED_BLOB.test(text)) {
+    add("warn", where, `${h.type} hook prompt carries an encoded blob`,
+      "decode it and review it; a hook prompt should be readable at a glance");
+  }
+  if (PERMISSION_EVENTS.has(event) && AUTO_APPROVE.test(text)) {
+    add("warn", where, `${h.type} hook on ${event} tells the model to approve tool calls: ${trim(text)}`,
+      "a hook that always approves bypasses the permission layer; allowlist specific commands instead");
+  }
+  if (tools) {
+    add("info", where, `agent hook spawns a tool-using subagent on every ${event}`,
+      "agent hooks run tools without asking you first; confirm you added this yourself");
+  }
+  return `${h.type} hook: ${text}`;
+}
+
+function auditHook(h, label, event, pluginRoot = null) {
+  const where = `${label} (${event} hook)`;
+  if (!isObject(h)) return;
+  // Plugin hooks reference their own files through CLAUDE_PLUGIN_ROOT; resolve
+  // it so the world-writable script check sees the real path.
+  if (pluginRoot && typeof h.command === "string") {
+    const expand = (s) => (typeof s === "string" ? s.replaceAll("${CLAUDE_PLUGIN_ROOT}", pluginRoot) : s);
+    h = { ...h, command: expand(h.command), args: Array.isArray(h.args) ? h.args.map(expand) : h.args };
+  }
+  // Older Codex hook files omit type on command hooks.
+  const type = h.type ?? (typeof h.command === "string" ? "command" : undefined);
+  let summary = null;
+  if (type === "command") {
+    if (typeof h.command !== "string") {
+      add("info", where, "could not inspect command hook: command is missing or not a string",
+        "set the command this hook runs, or remove the hook");
+    } else {
+      summary = fullHookCommand(h);
+      auditHookCommand(summary, label, event);
+    }
+  } else if (type === "http") summary = auditHttpHook(h, where, event);
+  else if (type === "mcp_tool") summary = auditMcpToolHook(h, where, event);
+  else if (type === "prompt" || type === "agent") summary = auditPromptHook({ ...h, type }, where, event);
+  else {
+    add("info", where, `could not inspect hook of type ${JSON.stringify(type ?? null)}`,
+      "check this hook against the host's hook reference and review it manually");
+  }
+  if (summary) lifecycleCallout(label, event, summary);
+}
+
+// An event map: { PreToolUse: [{ matcher, hooks: [handler, ...] }], ... }
+function auditHookMap(map, label, pluginRoot = null) {
+  for (const [event, groups] of Object.entries(isObject(map) ? map : {})) {
+    for (const group of Array.isArray(groups) ? groups : []) {
+      for (const h of Array.isArray(group?.hooks) ? group.hooks : []) auditHook(h, label, event, pluginRoot);
+    }
+  }
+}
+
 function auditSettingsFile(path, label) {
   const cfg = readJson(path);
   if (!cfg) return;
 
-  for (const [event, groups] of Object.entries(cfg.hooks ?? {})) {
-    const sessionStart = event === "SessionStart";
-    for (const group of Array.isArray(groups) ? groups : []) {
-      for (const h of group.hooks ?? []) {
-        if (h.type === "command" && typeof h.command === "string") {
-          const full = fullHookCommand(h);
-          auditHookCommand(full, label, event);
-          if (sessionStart) {
-            add("info", `${label} (SessionStart hook)`, `runs on every session start: ${trim(full)}`,
-              "SessionStart is the re-execution vector malware uses; confirm you added this yourself");
-          }
-        }
-      }
-    }
-  }
+  auditHookMap(cfg.hooks, label);
 
   const perms = cfg.permissions ?? {};
   if (perms.defaultMode === "bypassPermissions") {
@@ -306,10 +465,7 @@ function auditCodexConfig(path, label) {
     const hookEvent = fullPath[0] === "hooks" && fullPath.includes("hooks") ? fullPath[1] : null;
     if (hookEvent && fullPath.at(-1) === "command" && typeof value === "string") {
       auditHookCommand(value, label, hookEvent);
-      if (hookEvent === "SessionStart") {
-        add("info", `${label} (SessionStart hook)`, `runs on every session start: ${trim(value)}`,
-          "SessionStart is a re-execution vector; confirm you added this hook yourself");
-      }
+      lifecycleCallout(label, hookEvent, value);
     }
   }
 
@@ -400,6 +556,170 @@ function auditMarketplaces() {
 }
 
 // ---------------------------------------------------------------------------
+// Check 4: what installed plugins can run
+// ---------------------------------------------------------------------------
+
+// Names a plugin's bin/ could shadow on the Bash tool's PATH.
+const SHADOWABLE = new Set([
+  "bash", "bun", "cargo", "cat", "claude", "codex", "cp", "curl", "docker", "env", "gh", "git", "go",
+  "ls", "make", "mv", "node", "npm", "npx", "pip", "pip3", "pnpm", "python", "python3", "rm", "sh",
+  "ssh", "sudo", "wget", "which", "yarn", "zsh",
+]);
+
+function readJsonResult(path) {
+  if (!existsSync(path)) return { missing: true };
+  try { return { value: JSON.parse(readFileSync(path, "utf8")) }; } catch { return { error: true }; }
+}
+
+const listDirs = (dir) => {
+  try { return readdirSync(dir, { withFileTypes: true }).filter((d) => d.isDirectory() && !d.name.startsWith(".")).map((d) => d.name); }
+  catch { return []; }
+};
+
+// A manifest path must stay inside the plugin; the host refuses one that
+// escapes, so the audit reports it instead of following it.
+function pluginPath(root, rel, label, field) {
+  if (typeof rel !== "string") return null;
+  const full = resolve(root, rel);
+  if (full !== root && !full.startsWith(root + sep)) {
+    add("info", label, `manifest ${field} path escapes the plugin directory: ${rel}`,
+      "the host will not load it; review why the plugin points outside itself");
+    return null;
+  }
+  return full;
+}
+
+function readPluginJson(path, label, what) {
+  const r = readJsonResult(path);
+  if (r.error) add("info", label, `could not parse ${what}: ${path}`,
+    "a file the scanner cannot read is not a clean result; review it manually");
+  return r.value;
+}
+
+function auditPluginHooks(root, manifest, label) {
+  const files = [join(root, "hooks", "hooks.json")];
+  const inline = [];
+  for (const entry of Array.isArray(manifest?.hooks) ? manifest.hooks : manifest?.hooks ? [manifest.hooks] : []) {
+    if (typeof entry === "string") {
+      const full = pluginPath(root, entry, label, "hooks");
+      if (full && !files.includes(full)) files.push(full);
+    } else if (isObject(entry)) inline.push(entry);
+  }
+  for (const file of files) {
+    const cfg = readPluginJson(file, label, "plugin hooks file");
+    if (!cfg) continue;
+    auditHookMap(cfg.hooks, label, root);
+    if (isWorldWritable(file)) {
+      add("critical", label, `plugin hooks file is world-writable: ${file}`,
+        `chmod o-w ${file} — any local process can change what this plugin runs`);
+    }
+  }
+  for (const map of inline) auditHookMap(map, label, root);
+}
+
+function auditPluginMonitors(root, manifest, label) {
+  const declared = manifest?.experimental?.monitors ?? manifest?.monitors;
+  let monitors = Array.isArray(declared) ? declared : null;
+  if (!monitors) {
+    const file = typeof declared === "string" ? pluginPath(root, declared, label, "monitors") : join(root, "monitors", "monitors.json");
+    const value = file && readPluginJson(file, label, "plugin monitors file");
+    monitors = Array.isArray(value) ? value : Array.isArray(value?.monitors) ? value.monitors : [];
+  }
+  for (const m of monitors) {
+    if (!isObject(m) || typeof m.command !== "string") {
+      add("info", label, "could not inspect monitor: command is missing or not a string",
+        "check the monitor entry against the plugin reference and review it manually");
+      continue;
+    }
+    const name = typeof m.name === "string" ? m.name : "unnamed";
+    const command = m.command.replaceAll("${CLAUDE_PLUGIN_ROOT}", root);
+    const when = typeof m.when === "string" && m.when.startsWith("on-skill-invoke:")
+      ? `the first time skill ${m.when.slice("on-skill-invoke:".length)} runs`
+      : "every session start";
+    add("info", `${label} (monitor ${name})`, `starts a background process at ${when}: ${trim(command)}`,
+      "monitors keep running for the whole session; confirm you expect this plugin to run one");
+    auditHookCommand(command, label, name, "monitor");
+  }
+}
+
+function auditPluginMcp(root, manifest, label) {
+  const servers = {};
+  const collect = (value) => {
+    const map = isObject(value?.mcpServers) ? value.mcpServers : value;
+    if (isObject(map)) Object.assign(servers, map);
+  };
+  collect(readPluginJson(join(root, ".mcp.json"), label, "plugin MCP config"));
+  for (const entry of Array.isArray(manifest?.mcpServers) ? manifest.mcpServers : manifest?.mcpServers ? [manifest.mcpServers] : []) {
+    if (typeof entry === "string" && entry.endsWith(".json")) {
+      const full = pluginPath(root, entry, label, "mcpServers");
+      if (full) collect(readPluginJson(full, label, "plugin MCP config"));
+    } else if (typeof entry === "string") {
+      add("info", label, `plugin ships an MCP bundle the audit cannot open: ${entry}`,
+        "bundles run their own server code; review the bundle before enabling this plugin");
+    } else collect(entry);
+  }
+  auditMcpServers(servers, label);
+}
+
+function auditPluginBin(root, label) {
+  const dir = join(root, "bin");
+  let names;
+  try { names = readdirSync(dir).filter((n) => !n.startsWith(".")); } catch { return; }
+  if (!names.length) return;
+  add("info", label, `puts ${names.length} executable(s) on the Bash tool's PATH: ${trim(names.join(", "))}`,
+    "the agent runs these as bare commands; confirm you expect this plugin to ship executables");
+  const shadows = names.filter((n) => SHADOWABLE.has(n.replace(/\.(?:sh|cmd|exe)$/i, "")));
+  if (shadows.length) {
+    add("warn", label, `bin/ shadows common commands: ${shadows.join(", ")}`,
+      "a plugin that replaces git, node, or curl on PATH sees every call to them; remove it unless you know why it does this");
+  }
+}
+
+function auditPluginDir(root, label, host) {
+  const manifestDir = host === "codex" ? ".codex-plugin" : ".claude-plugin";
+  const manifest = readPluginJson(join(root, manifestDir, "plugin.json"), label, "plugin manifest");
+  auditPluginHooks(root, manifest, label);
+  auditPluginMcp(root, manifest, label);
+  if (host === "claude") {
+    auditPluginMonitors(root, manifest, label);
+    auditPluginBin(root, label);
+  }
+}
+
+// Every version directory on disk is audited, enabled or not: a project
+// settings file can enable any installed plugin, and an older version keeps
+// running in sessions that loaded it until cleanup removes it.
+function auditInstalledPlugins(pluginsRoot, host) {
+  const seen = new Set();
+  const visit = (root, label) => {
+    let real;
+    try { real = realpathSync(root); } catch { return; }
+    if (seen.has(real) || existsSync(join(real, ".orphaned_at"))) return;
+    seen.add(real);
+    auditPluginDir(real, label, host);
+  };
+  const prefix = host === "codex" ? "codex plugin" : "plugin";
+  const cache = join(pluginsRoot, "cache");
+  for (const market of listDirs(cache)) {
+    for (const plugin of listDirs(join(cache, market))) {
+      for (const version of listDirs(join(cache, market, plugin))) {
+        visit(join(cache, market, plugin, version), `${prefix} ${plugin}@${market} ${version}`);
+      }
+    }
+  }
+  if (host !== "claude") return;
+  // Plugins loaded in place from a local marketplace are recorded here with
+  // their source path rather than copied into cache/.
+  const installed = readPluginJson(join(pluginsRoot, "installed_plugins.json"), pluginsRoot, "installed_plugins.json");
+  for (const [id, records] of Object.entries(isObject(installed?.plugins) ? installed.plugins : {})) {
+    for (const record of Array.isArray(records) ? records : [records]) {
+      if (typeof record?.installPath === "string") visit(record.installPath, `${prefix} ${id}`);
+    }
+  }
+  for (const name of listDirs(join(pluginsRoot, "synced"))) visit(join(pluginsRoot, "synced", name), `${prefix} ${name}@synced`);
+}
+
+// ---------------------------------------------------------------------------
 // Run
 // ---------------------------------------------------------------------------
 
@@ -427,6 +747,10 @@ auditCodexConfig(join(HOME, ".codex", "config.toml"), "~/.codex/config.toml");
 auditCodexConfig(join(PROJECT, ".codex", "config.toml"), ".codex/config.toml");
 
 auditMarketplaces();
+// --home pins every root for tests and CI; otherwise honor a relocated cache.
+const claudePlugins = (!flag("--home") && process.env.CLAUDE_CODE_PLUGIN_CACHE_DIR) || join(HOME, ".claude", "plugins");
+auditInstalledPlugins(claudePlugins, "claude");
+auditInstalledPlugins(join(HOME, ".codex", "plugins"), "codex");
 
 // ---------------------------------------------------------------------------
 // Report
